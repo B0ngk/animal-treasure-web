@@ -1,0 +1,4470 @@
+==== MODULE: Module1.bas (328 lines) ====
+Attribute VB_Name = "Module1"
+    Public pptApp As Object ' PowerPoint.Application
+    Public slideShowView As Object ' PowerPoint.SlideShowView
+    Public slideName As String
+    Public slideIndex As Integer
+Sub 기본_최정정리_버튼()
+
+Dim shp As PowerPoint.shape
+    
+    '---------------------------------------------------------------------
+    '■자동화 버튼 숨기기
+    With SlideShowWindows(1).View.Slide
+        For Each shp In .Shapes
+            If shp.Name = "(자동화버튼)묶음" And shp.Type = msoGroup Then
+                shp.Visible = msoFalse
+                Exit For
+            End If
+        Next shp
+    End With
+    '----------------------------------------------------------------------
+    
+End Sub
+
+
+
+Sub 기본_섬네일_참조이미지_저장유저폼_열기()
+    frmExportImages.Show
+End Sub
+
+
+Sub 기본_현재슬라이드_이름확인및변경_유저폼_열기()
+
+    ' PowerPoint 애플리케이션을 가져옴
+    On Error Resume Next
+    Set pptApp = GetObject(, "PowerPoint.Application")
+    On Error GoTo 0
+    
+    ' PowerPoint가 실행 중이 아니면 새로운 인스턴스를 시작
+    If pptApp Is Nothing Then
+        Set pptApp = CreateObject("PowerPoint.Application")
+    End If
+
+    ' 현재 슬라이드 쇼 뷰 가져오기
+    Set slideShowView = pptApp.SlideShowWindows(1).View
+
+    ' 현재 슬라이드 인덱스 가져오기
+    slideIndex = slideShowView.CurrentShowPosition
+    
+    ' 슬라이드 이름 가져오기
+    slideName = pptApp.ActivePresentation.Slides(slideIndex).Name
+    
+    ' 현재 슬라이드 이름 유저폼에 가져오기
+    slideNameChangeForm.InputName.Value = slideName
+    
+    '유저폼 열기
+    slideNameChangeForm.Show
+   
+
+End Sub
+Sub 기본_현재슬라이드_이름확인및변경_유저폼_닫기()
+
+    
+    '유저폼 닫기
+    slideNameChangeForm.HIde
+   
+
+End Sub
+
+
+
+Sub 기본_현재슬라이드_이름확인및변경_유저폼_변경하기버튼()
+
+    
+    ' 새로운 슬라이드 이름 설정 (예: "새로운 슬라이드 이름")
+    pptApp.ActivePresentation.Slides(slideIndex).Name = slideNameChangeForm.InputName.Value
+
+    ' 결과 표시
+    MsgBox "현재 슬라이드의 이름이   [ " & slideNameChangeForm.InputName.Value & " ]   으로 변경되었습니다.", vbInformation
+
+    ' 객체 해제
+    Set slideShowView = Nothing
+    Set pptApp = Nothing
+    
+    '유저폼 닫기
+    slideNameChangeForm.HIde
+    
+End Sub
+
+
+
+
+Public Sub 문제카드_액션번호대로설정()
+'■이동액션 자체에 랜덤하게 문제선택되도록 하여 해당 기능이 필요없어 미사용.
+
+
+    Dim slideIndex As Integer
+    slideIndex = 10 ' 슬라이드 10의 인덱스 (문제카드가 있는 메인 슬라이드)
+
+    Dim slideCount As Integer
+    slideCount = 15 ' 하이퍼링크로 이동할 슬라이드 개수
+
+    Randomize ' 랜덤 시드 초기화
+
+    Dim Slide As Slide
+    Dim cardShape As shape
+
+    ' 슬라이드 10 참조
+    Set Slide = ActivePresentation.Slides(slideIndex)
+
+
+    '■해당기능 미사용■ 슬라이드 10의 "(카드)1"부터 "(카드)15"까지의 개체에 랜덤하게 하이퍼링크 지정
+    i = 1
+    For cardIndex = 1 To slideCount
+        ' "(카드)1"부터 "(카드)15"까지의 개체 참조
+        Set cardShape = Slide.Shapes("(카드)" & cardIndex)
+
+
+        ' 선택된 슬라이드로 하이퍼링크 지정
+        cardShape.ActionSettings(ppMouseClick).Action = ppActionRunMacro
+        cardShape.ActionSettings(ppMouseClick).Run = "이동_문제" & cardIndex
+        
+    Next cardIndex
+    
+End Sub
+Sub 기본_현재슬라이드_모둠지정순서변경_유저폼_열기()
+
+    ' PowerPoint 애플리케이션을 가져옴
+    On Error Resume Next
+    Set pptApp = GetObject(, "PowerPoint.Application")
+    On Error GoTo 0
+    
+    ' PowerPoint가 실행 중이 아니면 새로운 인스턴스를 시작
+    If pptApp Is Nothing Then
+        Set pptApp = CreateObject("PowerPoint.Application")
+    End If
+
+
+    OderGroupForm.InputOder.Value = Slide9.Shapes("(설정)플레이순서지정").TextFrame.TextRange.Text
+   
+    '유저폼 열기
+    OderGroupForm.Show
+   
+
+End Sub
+
+Sub 기본_현재슬라이드_모둠지정순서변경_유저폼_닫기()
+
+    
+    '유저폼 닫기
+     Unload OderGroupForm
+   
+
+End Sub
+
+Sub 기본_현재슬라이드_모둠지정순서변경_유저폼_변경하기버튼()
+        
+    ' 변경할 팀 이름을 설정합니다
+    OderGroup = OderGroupForm.InputOder.Value
+    
+    '------------------------------------------------------------------------------------------------
+    ' 글자 수 확인 (공백 포함)
+    If Len(OderGroup) > 8 Then
+        MsgBox "설정할 수 있는 그룹수를 초과하였습니다. 최대 8팀까지 설정할 수 있습니다."
+        Exit Sub
+    End If
+    '------------------------------------------------------------------------------------------------
+    
+    '------------------------------------------------------------------------------------------------
+    ' 1~8까지 한번씩 들어갔는지 확인
+    '■■■■■■■■
+    Dim a As String
+    Dim i As Integer
+    Dim counts(1 To 8) As Integer
+    Dim isValid As Boolean
+    Dim invalidChar As Boolean
+    
+    ' 변수 a에 테스트할 문자열을 할당
+    a = OderGroup
+    
+    ' 초기값 설정
+    isValid = True
+    invalidChar = False
+    
+    ' 각 숫자의 카운트 초기화
+    For i = 1 To 8
+        counts(i) = 0
+    Next i
+    
+    ' 문자열의 각 문자를 확인
+    For i = 1 To Len(OderGroup)
+        Dim char As String
+        char = Mid(OderGroup, i, 1)
+        
+        If IsNumeric(char) Then
+            Dim num As Integer
+            num = CInt(char)
+            If num >= 1 And num <= 8 Then
+                counts(num) = counts(num) + 1
+                If counts(num) > 1 Then
+                    isValid = False
+                End If
+            Else
+                invalidChar = True
+            End If
+        Else
+            invalidChar = True
+        End If
+    Next i
+    
+    ' 결과 출력
+    If isValid And Not invalidChar Then
+        'MsgBox "변수 OderGroup는 1부터 4까지의 숫자를 중복 없이 포함하고 있습니다."
+    Else
+        MsgBox "입력한 데이터의 숫자가 중복되었거나, 유효하지 않은 문자가 포함되어 있습니다. 다시 입력해주세요."
+        Exit Sub
+    End If
+    '------------------------------------------------------------------------------------------------
+
+    
+    
+    '모둠순서 텍스트 변경
+    Slide9.Shapes("(설정)플레이순서지정").TextFrame.TextRange.Text = OderGroup
+    
+    '이름 변경후 유저폼 자동 닫기
+    
+    Call 기본_현재슬라이드_모둠지정순서변경_유저폼_닫기
+    
+End Sub
+
+
+
+Sub 기본_데이터가져오기_유저폼_열기()
+     '유저폼 열기
+    ImportUserForm.Show
+End Sub
+
+
+
+'소스 파일에서 슬라이드·개체를 가져오는 공용 루틴
+Public Sub 기본_데이터가져오기_실행버튼( _
+        ByVal sourceFileName As String, _
+        Optional ByVal TitlePage As Long = 4, _
+        Optional ByVal QuizPage1Start As Long = 71) '■타이틀페이지변수:4 '■1번퀴즈시작페이지변수: 71
+
+    Dim currentPres As Presentation
+    Dim sourcePres  As Presentation
+    Dim i           As Long
+    
+    '--- 0. 유효성 검사 ---------------------------------------
+    If Trim(sourceFileName) = "" Then
+        MsgBox "파일명을 입력해주세요.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' 확장자 없으면 .pptm 추가
+    If InStrRev(sourceFileName, ".") = 0 Then
+        sourceFileName = sourceFileName & ".pptm"
+    End If
+    
+    ' 현재 프레젠테이션과 같은 폴더라면 경로 보정
+    If Left(sourceFileName, 1) <> "\" And InStr(sourceFileName, ":") = 0 Then
+        sourceFileName = ActivePresentation.Path & "\" & sourceFileName
+    End If
+    
+    '--- 1. 소스 프레젠테이션 열기 ----------------------------
+    On Error GoTo 파일열기실패
+    Set sourcePres = Presentations.Open(fileName:=sourceFileName, WithWindow:=msoFalse)
+    On Error GoTo 0
+    
+    Set currentPres = ActivePresentation
+    
+    
+    '--- 2. TitlePage(기본 4) 개체 교체 ------------------------
+    Dim srcSlide As Slide, tgtSlide As Slide
+    Set srcSlide = sourcePres.Slides(TitlePage)
+    Set tgtSlide = currentPres.Slides(TitlePage)
+    
+    For i = tgtSlide.Shapes.count To 1 Step -1
+        tgtSlide.Shapes(i).Delete          '기존 개체 모두 삭제
+    Next i
+    
+    srcSlide.Shapes.Range.Copy
+    tgtSlide.Shapes.Paste                  '새로 붙여넣기
+    
+    
+   
+    
+    '--- 3. QuizPage1Start(기본 85) 이후 슬라이드 교체 ----------
+Dim srcCount As Long
+Dim idx() As Variant
+Dim n As Long, j As Long
+
+srcCount = sourcePres.Slides.count
+
+'① 현재 프레젠테이션의 QuizPage1Start 이후 슬라이드 삭제
+For i = currentPres.Slides.count To QuizPage1Start Step -1
+    currentPres.Slides(i).Delete
+Next i
+
+'② 소스 프레젠테이션의 QuizPage1Start~마지막 슬라이드 한꺼번에 복사
+If srcCount >= QuizPage1Start Then
+
+    n = srcCount - QuizPage1Start + 1
+    ReDim idx(1 To n)
+
+    For j = 1 To n
+        idx(j) = QuizPage1Start + j - 1
+    Next j
+
+    sourcePres.Slides.Range(idx).Copy
+    currentPres.Slides.Paste (currentPres.Slides.count + 1)
+
+End If
+    
+    
+    
+    
+    
+    
+    '--- 4. 마무리 --------------------------------------------
+    sourcePres.Close
+    MsgBox "데이터 가져오기가 완료되었습니다.", vbInformation
+    Exit Sub
+
+파일열기실패:
+    MsgBox "파일을 열 수 없습니다. 파일명이 정확한지 확인하세요." & vbCrLf & sourceFileName, vbCritical
+End Sub
+'==============================================================
+
+==== MODULE: Slide1.cls (8 lines) ====
+Attribute VB_Name = "Slide1"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: slideNameChangeForm.frm (23 lines) ====
+Attribute VB_Name = "slideNameChangeForm"
+Attribute VB_Base = "0{63283782-1F43-44F3-9858-E26FFEF78B01}{9C65F4E3-E4E1-4D12-8043-0541C94520F4}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = False
+Private Sub CommandButton1_Click()
+
+Call 기본_현재슬라이드_이름확인및변경_유저폼_변경하기버튼
+
+End Sub
+
+Private Sub CommandButton2_Click()
+
+Call 기본_현재슬라이드_이름확인및변경_유저폼_닫기
+
+End Sub
+
+Private Sub UserForm_Click()
+
+End Sub
+
+==== MODULE: Module2.bas (80 lines) ====
+Attribute VB_Name = "Module2"
+
+Sub 보물상자확인후_문제선택()
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 오픈보물상자 숨기기 및 닫힌보물상자 모두 보이기
+    Dim currentSlide As Slide
+    If SlideShowWindows.count > 0 Then ' 슬라이드 쇼 중인 경우
+        Set currentSlide = SlideShowWindows(1).View.Slide
+        For i = 1 To 3
+            currentSlide.Shapes("(보물상자" & i & ")열림").Visible = False ' 보물상자1 열림 개체 보이게 설정
+            currentSlide.Shapes("(보물상자" & i & ")").Visible = True ' 보물상자1 열림 개체 보이게 설정
+        Next i
+            currentSlide.Shapes("(버튼)문제선택").Visible = False
+            currentSlide.Shapes("(보물상자123)배경").Visible = False
+                      
+    Else
+        MsgBox "슬라이드 쇼 중이 아닙니다."
+    End If
+    
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 슬라이드 이동
+SlideShowWindows(1).View.GotoSlide 3 '슬라이드쇼 모드시 이동
+'ActivePresentation.Slides(3).Select '편집모드 시 이동
+
+End Sub
+
+
+
+
+Sub 보물상자1_열림()
+
+    Dim currentSlide As Slide
+    If SlideShowWindows.count > 0 Then ' 슬라이드 쇼 중인 경우
+        Set currentSlide = SlideShowWindows(1).View.Slide
+        currentSlide.Shapes("(보물상자1)").Visible = False ' 보물상자1 개체 숨기기 설정
+        currentSlide.Shapes("(보물상자1)열림").Visible = True ' 보물상자1 열림 개체 보이게 설정
+        currentSlide.Shapes("(보물상자123)배경").Visible = True
+        currentSlide.Shapes("(버튼)문제선택").Visible = True
+                
+    Else
+        MsgBox "슬라이드 쇼 중이 아닙니다."
+    End If
+    
+End Sub
+
+
+Sub 보물상자2_열림()
+
+    Dim currentSlide As Slide
+    If SlideShowWindows.count > 0 Then ' 슬라이드 쇼 중인 경우
+        Set currentSlide = SlideShowWindows(1).View.Slide
+        currentSlide.Shapes("(보물상자2)").Visible = False ' 보물상자1 개체 숨기기 설정
+        currentSlide.Shapes("(보물상자2)열림").Visible = True ' 보물상자1 열림 개체 보이게 설정
+        currentSlide.Shapes("(보물상자123)배경").Visible = True
+        currentSlide.Shapes("(버튼)문제선택").Visible = True
+                
+    Else
+        MsgBox "슬라이드 쇼 중이 아닙니다."
+    End If
+    
+End Sub
+
+
+
+Sub 보물상자3_열림()
+
+    Dim currentSlide As Slide
+    If SlideShowWindows.count > 0 Then ' 슬라이드 쇼 중인 경우
+        Set currentSlide = SlideShowWindows(1).View.Slide
+        currentSlide.Shapes("(보물상자3)").Visible = False ' 보물상자1 개체 숨기기 설정
+        currentSlide.Shapes("(보물상자3)열림").Visible = True ' 보물상자1 열림 개체 보이게 설정
+        currentSlide.Shapes("(보물상자123)배경").Visible = True
+        currentSlide.Shapes("(버튼)문제선택").Visible = True
+                
+    Else
+        MsgBox "슬라이드 쇼 중이 아닙니다."
+    End If
+    
+End Sub
+
+==== MODULE: Slide3.cls (8 lines) ====
+Attribute VB_Name = "Slide3"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Slide2.cls (8 lines) ====
+Attribute VB_Name = "Slide2"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Module3.bas (949 lines) ====
+Attribute VB_Name = "Module3"
+Public slideIndexes(1 To 15) As Integer   '문제카드 최대 15개
+Public QuizCount As Single
+Public itemCount As Integer
+Public QuizNum(1 To 15) As Integer   '문제카드 최대 15개
+Public GotoSlides(1 To 15) As Integer '문제카드 최대 15개
+Public GotoItemSlides1(1 To 10) As Integer '아이템은 최대 10개
+Public GotoItemSlides2(1 To 10) As Integer '아이템은 최대 10개
+Public GotoItemSlides3(1 To 10) As Integer '아이템은 최대 10개
+Public lastSlide As Integer
+
+Public C As Integer
+Public Item1C As Integer
+Public Item2C As Integer
+Public Item3C As Integer
+
+
+
+
+
+
+
+Sub 이동_메인페이지로()
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 슬라이드 이동
+SlideShowWindows(1).View.GotoSlide 10
+
+
+End Sub
+
+Sub 랜덤슬라이드이동_랜덤숫자생성()
+    
+
+    
+    C = 15 ' 필요한 문제 초기값 설정
+
+    Dim i As Integer
+    Dim j As Integer
+    Dim temp As Integer
+    Dim isDuplicate As Boolean
+    Dim lastSlide As Integer
+    Dim QuizCount As Integer
+    
+    
+    lastSlide = ActivePresentation.Slides.count
+    QuizCount = ((lastSlide + 1) - 70) / 3 ' 문제은행 총 문제 수 카운트
+        
+    '--------------------------------------------------------
+    '■■■■■■■■■■■ slideIndexes(i) C까지 랜덤
+    '기본 문제카드가 C이기에 16까지 랜덤 정의
+     
+    Randomize
+    If QuizCount >= C Then
+        ' 문제 수가 15개 이상일 때 중복 제거
+        For i = 1 To C
+            Do
+                temp = Int((C - 1 + 1) * Rnd + 1) ' 1부터 C까지 랜덤 숫자 생성
+                isDuplicate = False
+                ' 중복된 숫자가 있는지 확인
+                For j = 1 To i - 1
+                    If slideIndexes(j) = temp Then
+                        isDuplicate = True
+                        Exit For
+                    End If
+                Next j
+            Loop While isDuplicate ' 중복이 있을 경우 다시 생성
+            slideIndexes(i) = temp ' 중복 없는 숫자를 배열에 저장
+        Next i
+        
+        
+    Else
+        ' 문제 수가 C개 미만일 때는 중복을 허용하여 C개 값 채우기
+        For i = 1 To C
+            temp = Int((C - 1 + 1) * Rnd + 1) ' 1부터 C까지 랜덤 숫자 생성
+            slideIndexes(i) = temp ' 중복된 숫자도 허용하고 배열에 저장
+        Next i
+    End If
+
+    '--------------------------------------------------------
+    '■■■■■■■■■■■ QuizNum(i) 문제 총 수를 확인 후 GotoSlides(i) 이동 슬라이드 인덱스 정의
+    Randomize
+    lastSlide = ActivePresentation.Slides.count
+    QuizCount = ((lastSlide + 1) - 70) / 3 '문제은행 총 문제 수 카운트 ■■■■■문제은행이 ★세팅★설정(70)페이지 부터 시작하며 한 문제당 ★세팅★설정(3)페이지씩 차지
+       
+    
+    If QuizCount >= C Then
+         ' 랜덤한 숫자로 배열 짓기 (중복 제거)
+        For i = 1 To C 'C개만 랜덤 뽑기
+            Do
+                temp = Int((QuizCount - 1 + 1) * Rnd + 1)
+                isDuplicate = False
+                For j = 1 To i - 1
+                    If QuizNum(j) = temp Then
+                        isDuplicate = True
+                        Exit For
+                    End If
+                Next j
+            Loop While isDuplicate
+            QuizNum(i) = temp
+            GotoSlides(i) = 70 + 1 + ((temp - 1) * 3) '문제슬라이드1~C까지 이동할 슬라이드 번호 정의■■■■■문제은행이 ★세팅★설정(70)페이지, 문제는 ★세팅★설정(70+1) 부터 시작하며 ★세팅★설정(3)페이지씩 차지
+        Next i
+    
+    Else
+         ' 랜덤한 숫자로 배열 짓기 (중복 허용)
+        For i = 1 To C ' C개만 랜덤 뽑기
+            '문제 수가 적을 경우 중복을 허용
+            temp = Int((QuizCount - 1 + 1) * Rnd + 1) ' 1부터 QuizCount까지 랜덤 숫자 생성
+            QuizNum(i) = temp ' 문제 번호를 배열에 저장
+            GotoSlides(i) = 70 + 1 + ((temp - 1) * 3) ' 각 문제에 해당하는 슬라이드 번호 계산
+        Next i
+    
+      
+    End If
+    
+    
+    
+     '--------------------------------------------------------
+    ' 배열된 숫자 출력 (테스트용)
+    For i = 1 To C
+        Debug.Print "slideIndexes"; slideIndexes(i)
+    Next i
+
+    ' 배열된 숫자 출력 (테스트용)
+    For i = 1 To C
+        Debug.Print "GotoSlides"; QuizNum(i) & " / " & GotoSlides(i)
+    Next i
+
+
+    
+
+End Sub
+
+
+
+
+Sub 랜덤슬라이드이동_랜덤아이템숫자생성()
+    
+
+    Item1C = 1 ' 초기값 설정
+    Item2C = 1 ' 초기값 설정
+    Item3C = 1 ' 초기값 설정
+    '--------------------------------------------------------
+    '■■■■■■■■■■■ (설정)아이템수 입력값에 따라 아이템 이동 슬라이드 랜덤 정의
+    
+            '--------------------------------------------------------
+            '■슬라이드 19에 있는 아이템 수 정의하기
+            Dim Slide As Slide
+            Dim shape As shape
+
+            
+            ' 슬라이드 19에 대한 참조를 얻습니다.
+            Set Slide = ActivePresentation.Slides(19) '★(설정) 아이템수 설정값이 있는 슬라이드
+            
+            ' 슬라이드에서 "(설정)아이템수" 개체를 찾습니다.
+            For Each shape In Slide.Shapes
+                If shape.Name = "(설정)아이템수" Then
+                    ' 개체의 텍스트를 itemCount 변수에 할당합니다.
+                    itemCount = shape.TextFrame.TextRange.Text
+                    Exit For
+                End If
+            Next shape
+             '--------------------------------------------------------
+     
+    '랜덤한 숫자로 배열 짓기 (중복 제거)
+    Randomize
+    Dim itemNum(1 To 10) As Integer
+        
+    For i = 1 To itemCount 'itemCount(아이템수)만큼만 랜덤 뽑기
+        Do
+            temp = Int((itemCount - 1 + 1) * Rnd + 1)
+            isDuplicate = False
+            For j = 1 To i - 1
+                If itemNum(j) = temp Then
+                    isDuplicate = True
+                    Exit For
+                End If
+            Next j
+        Loop While isDuplicate
+        itemNum(i) = temp
+        GotoItemSlides1(i) = 20 + (temp - 1) '아이템슬라이드 슬라이드 번호 정의■■■■■ ★세팅★설정(20)페이지 부터 시작
+    Next i
+    
+    
+    For i = 1 To itemCount 'itemCount(아이템수)만큼만 랜덤 뽑기
+        Do
+            temp = Int((itemCount - 1 + 1) * Rnd + 1)
+            isDuplicate = False
+            For j = 1 To i - 1
+                If itemNum(j) = temp Then
+                    isDuplicate = True
+                    Exit For
+                End If
+            Next j
+        Loop While isDuplicate
+        itemNum(i) = temp
+        GotoItemSlides2(i) = 30 + (temp - 1) '아이템슬라이드 슬라이드 번호 정의■■■■■ ★세팅★설정(30)페이지 부터 시작
+    Next i
+    
+       
+       
+    For i = 1 To itemCount 'itemCount(아이템수)만큼만 랜덤 뽑기
+        Do
+            temp = Int((itemCount - 1 + 1) * Rnd + 1)
+            isDuplicate = False
+            For j = 1 To i - 1
+                If itemNum(j) = temp Then
+                    isDuplicate = True
+                    Exit For
+                End If
+            Next j
+        Loop While isDuplicate
+        itemNum(i) = temp
+        GotoItemSlides3(i) = 40 + (temp - 1) '아이템슬라이드 슬라이드 번호 정의■■■■■ ★세팅★설정(40)페이지 부터 시작
+    Next i
+    
+      
+    ' 배열된 숫자 출력 (테스트용)
+    'For i = 1 To itemCount
+        'Debug.Print "GotoItemSlides1"; GotoItemSlides1(i)
+        'Debug.Print "GotoItemSlides2"; GotoItemSlides2(i)
+        'Debug.Print "GotoItemSlides3"; GotoItemSlides3(i)
+    'Next i
+    
+
+End Sub
+Sub 문제카드채우기()
+        
+
+            '---------------------------------------------------------------------------------------------------------------
+            Dim answer As VbMsgBoxResult
+            answer = MsgBox("확인을 하면 문제카드가 다시 생성되고 문제와 보상 등이 다시 배치됩니다." & vbCrLf & "계속 진행하여 문제카드를 생성하시겠습니까?", vbYesNo)
+            
+            If answer = vbYes Then
+                ' Yes를 선택한 경우 실행할 코드
+                'Call 버튼_게임시작하기 '■
+            
+            Else
+                ' No를 선택한 경우 실행할 코드
+                
+            End If
+            '---------------------------------------------------------------------------------------------------------------
+
+    
+End Sub
+
+
+Public Sub 랜덤슬라이드이동_정답보물찾기()
+              
+    If C >= 0 And C <= 15 Then
+        GotoSlideIndex = slideIndexes(C + 1) + (49) '■ 문제를 선택하면 C가 -1되어 19부터 시작하기때문에 C+1 / 슬라이드50부터 시작하도록 49에 1씩 추가되도록 함.
+        'C = C - 1
+        'MsgBox (GotoSlideIndex)
+        SlideShowWindows(1).View.GotoSlide GotoSlideIndex
+                   
+    Else
+       'MsgBox (C & "슬라이드 15개 모두 이동완료")
+    End If
+    
+    
+End Sub
+
+
+Public Sub 랜덤슬라이드이동_오답문제선택()
+        
+
+    If C >= 0 And C <= 15 Then
+        
+        '고정된 오답 페이지로 이동하기에 아래 코드 실행하지 않음.
+        'GotoSlideIndex = slideIndexes(C +1 ) * 7 + 2 '■ 문제를 선택하면 C가 -1되어 19부터 시작하기때문에 C+1 / 슬라이드12부터 시작하도록 함.
+        'C = C - 1
+        'MsgBox (GotoSlideIndex)
+        
+        
+        SlideShowWindows(1).View.GotoSlide 11 '★(설정) 슬라이드11 오답페이지양식
+
+               
+    Else
+       'MsgBox ("15개의 슬라이드 모두 이동완료")
+    End If
+    
+    
+End Sub
+
+Public Sub 랜덤슬라이드이동_1번아이템선택()
+        
+        If Item1C > itemCount Then '해당 보물상자 선택 횟수가 아이템수 보다 큰 경우 초기화
+                '----------------------------------------------------------------------------------------------------------------
+                '■■■랜덤슬라이드이동 랜덤아이템숫자 생성
+                Call 랜덤슬라이드이동_랜덤아이템숫자생성
+                Item1C = 1
+        Else '해당 보물상자 선택 횟수가 아이템수 보다 적은경우 넘어가며 진행
+        End If
+        
+        GotoItem1SlideIndex = GotoItemSlides1(Item1C) '■ GotoItemSlides1(i) 1부터 1씩 증가하며 랜덤이동페이지 인덱스 설정
+        Item1C = Item1C + 1
+        SlideShowWindows(1).View.GotoSlide GotoItem1SlideIndex
+               
+End Sub
+
+Public Sub 랜덤슬라이드이동_2번아이템선택()
+        
+        If Item2C > itemCount Then '해당 보물상자 선택 횟수가 아이템수 보다 큰 경우 초기화
+                '----------------------------------------------------------------------------------------------------------------
+                '■■■랜덤슬라이드이동 랜덤아이템숫자 생성
+                Call 랜덤슬라이드이동_랜덤아이템숫자생성
+                Item2C = 1
+        Else '해당 보물상자 선택 횟수가 아이템수 보다 적은경우 넘어가며 진행
+        End If
+
+
+        GotoItem2SlideIndex = GotoItemSlides2(Item2C) '■ GotoItemSlides2(i) 1부터 1씩 증가하며 랜덤이동페이지 인덱스 설정
+        Item2C = Item2C + 1
+        SlideShowWindows(1).View.GotoSlide GotoItem2SlideIndex
+               
+End Sub
+
+
+Public Sub 랜덤슬라이드이동_3번아이템선택()
+        
+        
+        If Item3C > itemCount Then '해당 보물상자 선택 횟수가 아이템수 보다 큰 경우 초기화
+                '----------------------------------------------------------------------------------------------------------------
+                '■■■랜덤슬라이드이동 랜덤아이템숫자 생성
+                Call 랜덤슬라이드이동_랜덤아이템숫자생성
+                Item3C = 1
+        Else '해당 보물상자 선택 횟수가 아이템수 보다 적은경우 넘어가며 진행
+        End If
+
+
+        GotoItem3SlideIndex = GotoItemSlides3(Item3C) '■ GotoItemSlides3(i) 1부터 1씩 증가하며 랜덤이동페이지 인덱스 설정
+        Item3C = Item3C + 1
+        SlideShowWindows(1).View.GotoSlide GotoItem3SlideIndex
+               
+End Sub
+
+
+Public Sub 문제카드_모두보이기()
+'■이동액션 자체에 랜덤하게 문제선택되도록 하여 해당 기능이 필요없어 미사용.
+
+
+    Dim slideIndex As Integer
+    slideIndex = 10 ' 슬라이드 10의 인덱스 (문제카드가 있는 메인 슬라이드)
+
+    Dim cardIndex As Integer
+    Dim Slide As Slide
+    Dim cardShape As shape
+
+    ' 슬라이드 10 참조
+    Set Slide = ActivePresentation.Slides(slideIndex)
+
+    For cardIndex = 1 To 15
+        ' "(카드)1"부터 "(카드)15"까지의 개체 참조
+        Set cardShape = Slide.Shapes("(카드)" & cardIndex)
+        cardShape.Visible = True
+     
+    Next cardIndex
+    
+End Sub
+
+
+
+Public Sub 랜덤문제카드_설정()
+'■이동액션 자체에 랜덤하게 문제선택되도록 하여 해당 기능이 필요없어 미사용.
+
+
+    Dim slideIndex As Integer
+    slideIndex = 10 ' 슬라이드 10의 인덱스 (문제카드가 있는 메인 슬라이드)
+
+    Dim cardIndex As Integer
+    Dim hyperlinkIndex As Integer
+    Dim hyperlinkSlideNum As Integer
+    Dim slideCount As Integer
+    slideCount = 15 ' 하이퍼링크로 이동할 슬라이드 개수
+
+    Randomize ' 랜덤 시드 초기화
+
+    Dim Slide As Slide
+    Dim cardShape As shape
+
+    ' 슬라이드 10 참조
+    Set Slide = ActivePresentation.Slides(slideIndex)
+
+
+    '■해당기능 미사용■ 슬라이드 10의 "(카드)1"부터 "(카드)15"까지의 개체에 랜덤하게 하이퍼링크 지정
+    i = 1
+    For cardIndex = 1 To slideCount
+        ' "(카드)1"부터 "(카드)15"까지의 개체 참조
+        Set cardShape = Slide.Shapes("(카드)" & cardIndex)
+
+
+        ' 랜덤 슬라이드 번호 하이퍼링크인덱스에 매칭
+        hyperlinkIndex = slideIndexes(i)
+        i = i + 1
+
+        ' 선택된 슬라이드로 하이퍼링크 지정
+        cardShape.ActionSettings(ppMouseClick).Action = ppActionRunMacro
+        cardShape.ActionSettings(ppMouseClick).Run = "이동_문제" & hyperlinkIndex
+
+        
+        ' 최종 연결 페이지 재구성
+        hyperlinkSlideNum = hyperlinkIndex * 3 + 105 '108부터 시작하여 3씩 커짐.
+        MsgBox (hyperlinkSlideNum)
+        targetSlideName = "Slide" & hyperlinkSlideNum
+        ' 선택된 슬라이드로 하이퍼링크 지정
+        cardShape.ActionSettings(ppMouseClick).Hyperlink.Address = targetSlideName
+    Next cardIndex
+    
+End Sub
+Public Sub 문제은행_문제번호설정()
+'■이동액션 자체에 랜덤하게 문제선택되도록 하여 해당 기능이 필요없어 미사용.
+
+Dim slideIndex As Integer
+Dim problemNumber As Integer
+Dim textBox As shape
+
+' 처음부터(70) 마지막 슬라이드까지 순환
+For slideIndex = 70 To ActivePresentation.Slides.count
+    ' 현재 슬라이드의 모든 개체를 확인
+    For Each textBox In ActivePresentation.Slides(slideIndex).Shapes
+        ' 개체의 이름이 "(문제번호)"인지 확인
+        If textBox.Name = "(문제번호)" Then
+            ' 문제 번호를 증가시키고 텍스트 변경
+            problemNumber = problemNumber + 1
+            textBox.TextFrame.TextRange.Text = "문제 " & problemNumber
+        End If
+    Next textBox
+Next slideIndex
+    
+
+MsgBox ("총 문제 " & problemNumber & "개의 문제번호 타이틀을 자동으로 수정 완료하였습니다.")
+    
+    
+End Sub
+
+
+
+Sub 이동_문제1()
+
+ 
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)1") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 112 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(1)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제2()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)2") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 115 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(2)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제3()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)3") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 118 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(3)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제4()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)4") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 121 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(4)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제5()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)5") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 124 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(5)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제6()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)6") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 127 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(6)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제7()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)7") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 130 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(7)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제8()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)8") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 133 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(8)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제9()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)9") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 136 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(9)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+
+End Sub
+
+
+Sub 이동_문제10()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)10") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 139 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(10)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제11()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)11") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 142 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(11)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제12()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)12") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 145 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(12)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제13()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)13") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 148 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(13)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제14()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)14") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 151 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(14)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제15()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)15") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 154 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(15)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제16()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)16") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 157 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(16)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제17()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)17") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 160 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(17)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+Sub 이동_문제18()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)18") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 163 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(18)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제19()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)19") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 166 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(19)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+
+Sub 이동_문제20()
+
+ '------------------------------------------------------------------
+ Dim cardShape As shape
+ ' 현재 활성화된 슬라이드를 가져옵니다.
+    Set Slide = ActivePresentation.Slides(10)
+    
+ ' 슬라이드에 있는 shape 객체를 가져옵니다.
+    Set cardShape = Slide.Shapes("(카드)20") '■개체 이름 변경 shape 이름을 조정해야 합니다.
+ 
+ ' "(주사위)1" 모양 숨기기
+    cardShape.Visible = False
+ '------------------------------------------------------------------
+
+
+C = C - 1
+'SlideShowWindows(1).View.GotoSlide 169 '문제페이지
+SlideShowWindows(1).View.GotoSlide GotoSlides(20)
+
+
+'■가림막 코드
+Slide10.Shapes("(가림막)묶음").Visible = True
+
+End Sub
+
+==== MODULE: Slide6.cls (8 lines) ====
+Attribute VB_Name = "Slide6"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Slide5.cls (8 lines) ====
+Attribute VB_Name = "Slide5"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Slide4.cls (8 lines) ====
+Attribute VB_Name = "Slide4"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Slide7.cls (8 lines) ====
+Attribute VB_Name = "Slide7"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Slide9.cls (35 lines) ====
+Attribute VB_Name = "Slide9"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Dim count As Long
+
+Sub 모둠수_더하기()
+count = Shapes("(설정)모둠수").TextFrame.TextRange.Text
+
+If count >= 8 Then
+MsgBox ("최대 설정할 수 있는 모둠수는 8모둠까지입니다.")
+Else
+Shapes("(설정)모둠수").TextFrame.TextRange.Text = count + 1
+End If
+
+End Sub
+Sub 모둠수_빼기()
+count = Shapes("(설정)모둠수").TextFrame.TextRange.Text
+
+If count <= 1 Then
+MsgBox ("최소로 설정할 수 있는 모둠수는 1모둠까지입니다.")
+Else
+Shapes("(설정)모둠수").TextFrame.TextRange.Text = count - 1
+End If
+
+
+End Sub
+
+
+
+
+
+==== MODULE: Slide8.cls (8 lines) ====
+Attribute VB_Name = "Slide8"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+==== MODULE: Slide10.cls (1504 lines) ====
+Attribute VB_Name = "Slide10"
+Attribute VB_Base = "0{91493445-5A91-11CF-8700-00AA0060263B}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Public count As Long
+Public LastChk As Long '1인경우 라스트체크, 0인경우 라스트체크 아닌경우
+
+'Dim myNumbers(1 To 8) As Integer
+'Dim currentIndex As Integer
+
+'Dim mySlide As PowerPoint.Slide
+'Dim myShape As PowerPoint.shape
+'Dim fixedNumbers As String
+'Dim GNumbers As String
+'Dim NowGNumber As Long
+
+Dim ChkGNumberA As Long
+Dim ChkGNumberB As Long
+
+Dim selectedShapes(1 To 8) As Boolean
+Dim numSelected As Integer
+
+Sub 버튼_주사위랜덤던지기()
+    Dim Slide As Slide
+    Dim diceShapeGroup As shape
+    Dim diceShapes(1 To 6) As shape
+    Dim randomIndex As Integer
+    
+    
+    ' "(주사위그룹)" 모양 가져오기
+    Set diceShapeGroup = Slide10.Shapes("(주사위그룹)")
+    
+    ' "(주사위)1" 모양 숨기기
+    diceShapeGroup.Visible = True
+    
+    '--------------------------------------------------------------------------------
+    ' "(주사위)랜덤 보이기
+    ' 주사위 개체 가져오기
+    Set diceShapes(1) = Slide10.Shapes("(주사위)1")
+    Set diceShapes(2) = Slide10.Shapes("(주사위)2")
+    Set diceShapes(3) = Slide10.Shapes("(주사위)3")
+    Set diceShapes(4) = Slide10.Shapes("(주사위)4")
+    Set diceShapes(5) = Slide10.Shapes("(주사위)5")
+    Set diceShapes(6) = Slide10.Shapes("(주사위)6")
+    
+    ' 모든 주사위 개체 숨기기
+    For i = 1 To 6
+        diceShapes(i).Visible = False
+    Next i
+    
+    ' 랜덤한 주사위 선택
+    Randomize
+    randomIndex = Int((6 - 1 + 1) * Rnd + 1)
+    
+    ' 선택된 주사위 보이게 하기
+    diceShapes(randomIndex).Visible = True
+    '--------------------------------------------------------------------------------
+    
+        ' "(주사위그룹)" 모양을 화면 중앙으로 이동
+    With diceShapeGroup
+        .Left = (Slide10.Parent.PageSetup.SlideWidth - .Width) / 2
+        .Top = (Slide10.Parent.PageSetup.SlideHeight - .Height) / 2
+        '.Visible = True '활성화 하면 그룹네 모든 개체가 숨김취소됨.
+    End With
+      
+
+End Sub
+
+Sub 버튼_주사위랜덤던지기_닫기()
+    Dim Slide As Slide
+    Dim diceShape As shape
+    
+    
+    ' "(주사위)1" 모양 가져오기
+    Set diceShapeGroup = Slide10.Shapes("(주사위그룹)")
+    
+    ' "(주사위)1" 모양 숨기기
+    diceShapeGroup.Visible = False
+End Sub
+
+
+    
+
+
+Sub 버튼_선택모둠_점수바꾸기()
+    
+    Dim targetName As String
+    Dim sld As Slide
+    Dim shp As shape
+    Dim shp2 As shape
+    Dim grp As shape
+    Dim shpName As String
+    Dim indices() As Integer
+    Dim count As Integer
+    Dim tempText As String
+    Dim i As Integer
+
+    
+    ' 찾을 개체 이름 설정
+    targetName = "선택버튼"
+    
+    ' 초기화
+    count = 0
+    
+    ' 현재 슬라이드 참조
+    Set sld = ActivePresentation.SlideShowWindow.View.Slide
+    
+    ' 슬라이드의 모든 모양 반복
+    For Each shp In sld.Shapes
+        ' 그룹인 경우
+        If shp.Type = msoGroup Then
+            ' 그룹 내 개체를 확인하고 개체 이름이 "선택버튼"을 포함하는지 확인
+            For Each grp In shp.GroupItems
+                If InStr(grp.Name, targetName) > 0 Then
+                    ' 개체의 텍스트 값이 "V"인 경우 count 증가
+                    
+                    If grp.TextFrame.TextRange.Text = "V" Then
+                       count = count + 1
+                    End If
+                End If
+            Next grp
+        Else
+            ' 개별 개체의 경우
+            If InStr(shp.Name, targetName) > 0 Then
+                ' 개체의 텍스트 값이 "V"인 경우 count 증가
+                If shp.TextFrame.TextRange.Text = "V" Then
+                   count = count + 1
+                End If
+            End If
+        End If
+    Next shp
+    
+    
+    
+    
+    
+    ' V 표시가 2개가 아닌 경우 메시지 표시 후 종료
+    If count <> 2 Then
+        MsgBox "2개 모둠을 선택해주세요!"
+        Exit Sub
+    End If
+    
+
+    
+    ' 인덱스 저장
+    ReDim indices(1 To 2)
+    i = 1
+    ' 슬라이드의 모든 모양 반복
+    For Each shp In sld.Shapes
+        If shp.Type = msoGroup Then
+            ' 그룹 내 개체 확인
+            For Each grp In shp.GroupItems
+                ' 지정한 문자열이 포함된 개체인지 확인
+                If InStr(grp.Name, targetName) > 0 Then
+                    ' 개체의 텍스트 값이 "V"인 경우
+                    If grp.TextFrame.TextRange.Text = "V" Then
+                        ' 인덱스 저장
+                        indices(i) = Val(Mid(grp.Name, 2, 1))
+                        i = i + 1
+                    End If
+                End If
+            Next grp
+        Else
+            ' 개별 개체의 경우
+            If InStr(shp.Name, targetName) > 0 Then
+                ' 개체의 텍스트 값이 "V"인 경우
+                If shp.TextFrame.TextRange.Text = "V" Then
+                    ' 인덱스 저장
+                    indices(i) = Val(Mid(shp.Name, 2, 1))
+                    i = i + 1
+                End If
+            End If
+        End If
+    Next shp
+    
+    
+    
+    ' V가 표시된 개체가 없는 경우 종료
+    If i = 1 Then
+        MsgBox "V가 표시된 개체가 없습니다."
+        Exit Sub
+    End If
+    
+    
+
+    
+       
+    ' 개체 텍스트 값 교환
+            
+        
+        Set shp = Shapes("(" & indices(1) & "모둠)점수")
+        tempText1 = shp.TextFrame.TextRange.Text
+         
+        Set shp2 = Shapes("(" & indices(2) & "모둠)점수")
+        tempText2 = shp2.TextFrame.TextRange.Text
+        
+        
+        shp.TextFrame.TextRange.Text = tempText2
+        shp2.TextFrame.TextRange.Text = tempText1
+
+    
+    
+End Sub
+
+
+Sub 모둠1_선택버튼()
+
+
+    Dim shp As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(1모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+End Sub
+
+Sub 모둠2_선택버튼()
+
+
+    Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(2모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+
+Sub 모둠3_선택버튼()
+
+
+    Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(3모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+Sub 모둠4_선택버튼()
+
+
+    Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(4모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+Sub 모둠5_선택버튼()
+
+
+    Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(5모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+Sub 모둠6_선택버튼()
+
+
+    Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(6모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+Sub 모둠7_선택버튼()
+
+
+    Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(7모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+Sub 모둠8_선택버튼()
+
+
+  Dim shp As shape
+    Dim shp1 As shape
+    Dim grp As shape
+    Dim targetName As String
+    
+    
+    ' 현재 선택된 개체 이름 확인
+        Set shp = Shapes("(8모둠)선택버튼") '■■■ 모둠이름 변경
+        shpName = shp.Name
+
+    ' 개체 이름에서 인덱스 추출
+    index = Val(Mid(shpName, 2, 1))
+    
+    ' 선택된 개체의 상태 확인 및 업데이트
+    If selectedShapes(index) = True Then
+        '--------------------------------------------------------------------------------
+        '■ 이미 V가 표시된 경우 (True)
+        shp.TextFrame.TextRange.Text = ""
+        shp.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        selectedShapes(index) = False
+        numSelected = numSelected - 1
+        '--------------------------------------------------------------------------------
+    Else
+        '--------------------------------------------------------------------------------
+        '■ V가 표시되지 않은 경우 (False
+        shp.TextFrame.TextRange.Text = "V"
+        shp.Fill.ForeColor.RGB = RGB(235, 61, 123)
+        
+        selectedShapes(index) = True
+        numSelected = numSelected + 1
+        '-------------------------------------------------------------------------------
+        
+    End If
+
+
+
+End Sub
+
+Sub 모둠1_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■1모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(1모둠)점수").TextFrame.TextRange.Text
+Shapes("(1모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠1_점수_빼기()
+count = Shapes("(1모둠)점수").TextFrame.TextRange.Text
+Shapes("(1모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠1_점수_초기화()
+count = Shapes("(1모둠)점수").TextFrame.TextRange.Text
+Shapes("(1모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■1모둠■■■■■
+End Sub
+
+
+Sub 모둠1_아이콘1_활성비활성()
+'■■■■■1모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(1모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(1모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(1모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(1모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(1모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(1모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠1_아이콘2_활성비활성()
+'■■■■■1모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(1모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(1모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(1모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(1모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(1모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(1모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠1_아이콘3_활성비활성()
+'■■■■■1모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(1모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(1모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(1모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(1모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(1모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(1모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠1_아이콘4_활성비활성()
+'■■■■■1모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(1모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(1모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(1모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(1모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(1모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(1모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠1_아이콘5_활성비활성()
+'■■■■■1모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(1모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(1모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(1모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(1모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(1모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(1모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠1_아이콘6_활성비활성()
+'■■■■■1모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(1모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(1모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(1모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(1모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(1모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(1모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠2_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■2모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(2모둠)점수").TextFrame.TextRange.Text
+Shapes("(2모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠2_점수_빼기()
+count = Shapes("(2모둠)점수").TextFrame.TextRange.Text
+Shapes("(2모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠2_점수_초기화()
+count = Shapes("(2모둠)점수").TextFrame.TextRange.Text
+Shapes("(2모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■2모둠■■■■■
+End Sub
+
+
+Sub 모둠2_아이콘1_활성비활성()
+'■■■■■2모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(2모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(2모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(2모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(2모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(2모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(2모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠2_아이콘2_활성비활성()
+'■■■■■2모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(2모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(2모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(2모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(2모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(2모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(2모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠2_아이콘3_활성비활성()
+'■■■■■2모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(2모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(2모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(2모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(2모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(2모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(2모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠2_아이콘4_활성비활성()
+'■■■■■2모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(2모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(2모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(2모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(2모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(2모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(2모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠2_아이콘5_활성비활성()
+'■■■■■2모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(2모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(2모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(2모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(2모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(2모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(2모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠2_아이콘6_활성비활성()
+'■■■■■2모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(2모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(2모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(2모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(2모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(2모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(2모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠3_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■3모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(3모둠)점수").TextFrame.TextRange.Text
+Shapes("(3모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠3_점수_빼기()
+count = Shapes("(3모둠)점수").TextFrame.TextRange.Text
+Shapes("(3모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠3_점수_초기화()
+count = Shapes("(3모둠)점수").TextFrame.TextRange.Text
+Shapes("(3모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■3모둠■■■■■
+End Sub
+
+
+Sub 모둠3_아이콘1_활성비활성()
+'■■■■■3모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(3모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(3모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(3모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(3모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(3모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(3모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠3_아이콘2_활성비활성()
+'■■■■■3모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(3모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(3모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(3모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(3모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(3모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(3모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠3_아이콘3_활성비활성()
+'■■■■■3모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(3모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(3모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(3모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(3모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(3모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(3모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠3_아이콘4_활성비활성()
+'■■■■■3모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(3모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(3모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(3모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(3모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(3모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(3모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠3_아이콘5_활성비활성()
+'■■■■■3모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(3모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(3모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(3모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(3모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(3모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(3모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠3_아이콘6_활성비활성()
+'■■■■■3모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(3모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(3모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(3모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(3모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(3모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(3모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+
+Sub 모둠4_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■4모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(4모둠)점수").TextFrame.TextRange.Text
+Shapes("(4모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠4_점수_빼기()
+count = Shapes("(4모둠)점수").TextFrame.TextRange.Text
+Shapes("(4모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠4_점수_초기화()
+count = Shapes("(4모둠)점수").TextFrame.TextRange.Text
+Shapes("(4모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■4모둠■■■■■
+End Sub
+
+
+Sub 모둠4_아이콘1_활성비활성()
+'■■■■■4모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(4모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(4모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(4모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(4모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(4모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(4모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠4_아이콘2_활성비활성()
+'■■■■■4모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(4모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(4모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(4모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(4모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(4모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(4모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠4_아이콘3_활성비활성()
+'■■■■■4모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(4모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(4모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(4모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(4모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(4모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(4모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠4_아이콘4_활성비활성()
+'■■■■■4모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(4모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(4모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(4모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(4모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(4모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(4모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠4_아이콘5_활성비활성()
+'■■■■■4모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(4모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(4모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(4모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(4모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(4모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(4모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠4_아이콘6_활성비활성()
+'■■■■■4모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(4모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(4모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(4모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(4모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(4모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(4모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+
+Sub 모둠5_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■5모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(5모둠)점수").TextFrame.TextRange.Text
+Shapes("(5모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠5_점수_빼기()
+count = Shapes("(5모둠)점수").TextFrame.TextRange.Text
+Shapes("(5모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠5_점수_초기화()
+count = Shapes("(5모둠)점수").TextFrame.TextRange.Text
+Shapes("(5모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■5모둠■■■■■
+End Sub
+
+
+Sub 모둠5_아이콘1_활성비활성()
+'■■■■■5모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(5모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(5모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(5모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(5모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(5모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(5모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠5_아이콘2_활성비활성()
+'■■■■■5모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(5모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(5모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(5모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(5모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(5모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(5모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠5_아이콘3_활성비활성()
+'■■■■■5모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(5모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(5모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(5모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(5모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(5모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(5모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠5_아이콘4_활성비활성()
+'■■■■■5모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(5모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(5모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(5모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(5모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(5모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(5모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠5_아이콘5_활성비활성()
+'■■■■■5모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(5모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(5모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(5모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(5모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(5모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(5모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠5_아이콘6_활성비활성()
+'■■■■■5모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(5모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(5모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(5모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(5모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(5모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(5모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠6_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■6모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(6모둠)점수").TextFrame.TextRange.Text
+Shapes("(6모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠6_점수_빼기()
+count = Shapes("(6모둠)점수").TextFrame.TextRange.Text
+Shapes("(6모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠6_점수_초기화()
+count = Shapes("(6모둠)점수").TextFrame.TextRange.Text
+Shapes("(6모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■6모둠■■■■■
+End Sub
+
+
+Sub 모둠6_아이콘1_활성비활성()
+'■■■■■6모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(6모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(6모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(6모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(6모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(6모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(6모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠6_아이콘2_활성비활성()
+'■■■■■6모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(6모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(6모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(6모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(6모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(6모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(6모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠6_아이콘3_활성비활성()
+'■■■■■6모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(6모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(6모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(6모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(6모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(6모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(6모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠6_아이콘4_활성비활성()
+'■■■■■6모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(6모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(6모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(6모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(6모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(6모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(6모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠6_아이콘5_활성비활성()
+'■■■■■6모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(6모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(6모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(6모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(6모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(6모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(6모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠6_아이콘6_활성비활성()
+'■■■■■6모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(6모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(6모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(6모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(6모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(6모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(6모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+
+Sub 모둠7_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■7모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(7모둠)점수").TextFrame.TextRange.Text
+Shapes("(7모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠7_점수_빼기()
+count = Shapes("(7모둠)점수").TextFrame.TextRange.Text
+Shapes("(7모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠7_점수_초기화()
+count = Shapes("(7모둠)점수").TextFrame.TextRange.Text
+Shapes("(7모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■7모둠■■■■■
+End Sub
+
+
+Sub 모둠7_아이콘1_활성비활성()
+'■■■■■7모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(7모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(7모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(7모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(7모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(7모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(7모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠7_아이콘2_활성비활성()
+'■■■■■7모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(7모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(7모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(7모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(7모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(7모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(7모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠7_아이콘3_활성비활성()
+'■■■■■7모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(7모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(7모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(7모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(7모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(7모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(7모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠7_아이콘4_활성비활성()
+'■■■■■7모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(7모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(7모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(7모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(7모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(7모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(7모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠7_아이콘5_활성비활성()
+'■■■■■7모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(7모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(7모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(7모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(7모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(7모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(7모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠7_아이콘6_활성비활성()
+'■■■■■7모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(7모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(7모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(7모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(7모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(7모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(7모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+
+
+
+Sub 모둠8_점수_더하기()
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'---------------------------------------------------------------------------------------------------------------------------------
+'■■■■■8모둠■■■■■
+'POINT1.Caption = (POINT1.Caption) + 1
+count = Shapes("(8모둠)점수").TextFrame.TextRange.Text
+Shapes("(8모둠)점수").TextFrame.TextRange.Text = count + 1
+
+End Sub
+Sub 모둠8_점수_빼기()
+count = Shapes("(8모둠)점수").TextFrame.TextRange.Text
+Shapes("(8모둠)점수").TextFrame.TextRange.Text = count - 1
+
+End Sub
+Sub 모둠8_점수_초기화()
+count = Shapes("(8모둠)점수").TextFrame.TextRange.Text
+Shapes("(8모둠)점수").TextFrame.TextRange.Text = "0"
+'■■■■■8모둠■■■■■
+End Sub
+
+
+Sub 모둠8_아이콘1_활성비활성()
+'■■■■■8모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(8모둠)아이콘1").Fill.Transparency = 0 Then
+   Shapes("(8모둠)아이콘1").Fill.Transparency = 0.7
+   Shapes("(8모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(8모둠)아이콘1").Fill.Transparency = 0.7 Then
+       Shapes("(8모둠)아이콘1").Fill.Transparency = 0
+       Shapes("(8모둠)아이콘1").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠8_아이콘2_활성비활성()
+'■■■■■8모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(8모둠)아이콘2").Fill.Transparency = 0 Then
+   Shapes("(8모둠)아이콘2").Fill.Transparency = 0.7
+   Shapes("(8모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(8모둠)아이콘2").Fill.Transparency = 0.7 Then
+       Shapes("(8모둠)아이콘2").Fill.Transparency = 0
+       Shapes("(8모둠)아이콘2").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠8_아이콘3_활성비활성()
+'■■■■■8모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(8모둠)아이콘3").Fill.Transparency = 0 Then
+   Shapes("(8모둠)아이콘3").Fill.Transparency = 0.7
+   Shapes("(8모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(8모둠)아이콘3").Fill.Transparency = 0.7 Then
+       Shapes("(8모둠)아이콘3").Fill.Transparency = 0
+       Shapes("(8모둠)아이콘3").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠8_아이콘4_활성비활성()
+'■■■■■8모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(8모둠)아이콘4").Fill.Transparency = 0 Then
+   Shapes("(8모둠)아이콘4").Fill.Transparency = 0.7
+   Shapes("(8모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(8모둠)아이콘4").Fill.Transparency = 0.7 Then
+       Shapes("(8모둠)아이콘4").Fill.Transparency = 0
+       Shapes("(8모둠)아이콘4").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠8_아이콘5_활성비활성()
+'■■■■■8모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(8모둠)아이콘5").Fill.Transparency = 0 Then
+   Shapes("(8모둠)아이콘5").Fill.Transparency = 0.7
+   Shapes("(8모둠)아이콘5").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(8모둠)아이콘5").Fill.Transparency = 0.7 Then
+       Shapes("(8모둠)아이콘5").Fill.Transparency = 0
+       Shapes("(8모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+Sub 모둠8_아이콘6_활성비활성()
+'■■■■■8모둠■■■■■
+'msoPictureGrayscale / msoPictureAutomatic / msoPictureWatermark / msoPictureMixed / msoPictureBlackAndWhite
+'-------------------------------------------------------------------------------
+If Shapes("(8모둠)아이콘6").Fill.Transparency = 0 Then
+   Shapes("(8모둠)아이콘6").Fill.Transparency = 0.7
+   Shapes("(8모둠)아이콘6").PictureFormat.ColorType = msoPictureGrayscale
+   
+ElseIf Shapes("(8모둠)아이콘6").Fill.Transparency = 0.7 Then
+       Shapes("(8모둠)아이콘6").Fill.Transparency = 0
+       Shapes("(8모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+       
+End If
+'-------------------------------------------------------------------------------
+End Sub
+
+
+
+==== MODULE: Module4.bas (842 lines) ====
+Attribute VB_Name = "Module4"
+Public count As Long
+Public LastChk As Long '1인경우 라스트체크, 0인경우 라스트체크 아닌경우
+
+Dim myNumbers(1 To 8) As Integer
+Public currentIndex As Integer
+
+Dim mySlide As PowerPoint.Slide
+Dim myShape As PowerPoint.shape
+Dim fixedNumbers As String
+Public GNumbers As String
+Public NowGNumber As Long
+
+Public NowOrderGroup As String '추가
+Public FirstOrderGroup As String '추가
+
+Public NowGroupScore(1 To 8) As Integer
+Public NowGroupItemOX(1 To 8) As String
+
+Dim ChkGNumberA As Long
+Dim ChkGNumberB As Long
+
+Dim selectedShapes(1 To 8) As Boolean
+Dim numSelected As Integer
+
+Sub 초기화_게임시작설정()
+
+'■■■■■■ 공통 게임시작설정 ■■■■■■■■■■
+'-----------------------------------------------------------------------------------------------
+        
+        '■텍스트 상자에 다음 숫자 표시
+        Slide10.Shapes("메인알림텍스트").TextFrame.TextRange.Text = "준비"
+
+        '■모든차례기호 흰색으로 설정
+        For i = 1 To GNumbers
+            Slide10.Shapes("(" & i & "모둠)차례배경").Fill.ForeColor.RGB = RGB(255, 255, 255)  '#FFFFFF
+        Next i
+        
+        '■(설정)플레이순서 현재플레이순서 반영
+        FirstOrderGroup = ""
+        For i = 1 To GNumbers
+            FirstOrderGroup = FirstOrderGroup & myNumbers(i)
+        Next i
+        NowOrderGroup = FirstOrderGroup
+        
+        Slide9.Shapes("(설정)플레이순서지정").TextFrame.TextRange.Text = FirstOrderGroup
+        
+'-----------------------------------------------------------------------------------------------
+             
+
+
+'■■■■■■ 게임별 특수 게임시작설정 ■■■■■■■■■■
+'-----------------------------------------------------------------------------------------------
+    
+       
+        '■가림막 코드 - 가림막 보이기
+        Slide10.Shapes("(가림막)묶음").Visible = True
+        Slide10.Shapes("(가림막)텍스트1").TextFrame.TextRange.Text = "이곳을 클릭하여 시작해 주세요!"
+        Slide10.Shapes("(가림막)텍스트2").TextFrame.TextRange.Text = "첫 차례"
+        Slide10.Shapes("(가림막)텍스트3").TextFrame.TextRange.Text = myNumbers(currentIndex) & " 모둠"
+       
+       
+        '--------------------------------------------------------------
+        '■점수 초기화 코드
+        For GNumber = 1 To 8
+            Slide10.Shapes("(" & GNumber & "모둠)점수").TextFrame.TextRange.Text = "0"
+        Next GNumber
+        '--------------------------------------------------------------
+        
+        
+        '--------------------------------------------------------------
+        '■아이템 초기화 코드
+        For GNumber = 1 To 8
+        
+            '비활성
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘1").Fill.Transparency = 0.7
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘1").PictureFormat.ColorType = msoPictureGrayscale
+            
+            '비활성
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘2").Fill.Transparency = 0.7
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘2").PictureFormat.ColorType = msoPictureGrayscale
+            
+            '비활성
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘3").Fill.Transparency = 0.7
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘3").PictureFormat.ColorType = msoPictureGrayscale
+            
+            '비활성
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘4").Fill.Transparency = 0.7
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘4").PictureFormat.ColorType = msoPictureGrayscale
+            
+            '활성
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘5").Fill.Transparency = 0
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘5").PictureFormat.ColorType = msoPictureAutomatic
+            
+            '활성
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘6").Fill.Transparency = 0
+            Slide10.Shapes("(" & GNumber & "모둠)아이콘6").PictureFormat.ColorType = msoPictureAutomatic
+            
+        Next GNumber
+        '--------------------------------------------------------------
+
+        GroupCount = 8
+        '------------------------------------------------------
+        '획득점수 기록★★★★
+        For i = 1 To GroupCount
+        Slide10.Shapes("(" & i & "모둠)획득점수").TextFrame.TextRange.Text = "라운드" & vbCr & "획득 점수"
+        Next i
+        '------------------------------------------------------
+        
+       
+'-----------------------------------------------------------------------------------------------
+
+
+End Sub
+
+
+Sub 버튼_게임시작하기()
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 보안 확인
+Call ChkLock_설정확인
+
+If ChkLock = True Then
+    Call 보안_문서수정확인
+ElseIf ChkLock = False Then
+    'MsgBox ("진행함")
+End If
+   
+'------------------------------------
+'보안마크 검사 후 매크로 진행여부
+Call 보안마크_검사
+
+If ChkWaterMark <> 1 Then
+Exit Sub
+End If
+'------------------------------------
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 플레이순서 기본세팅
+
+
+If Slide9.Shapes("(설정)버튼-플레이순서-지정").Fill.ForeColor.RGB = RGB(255, 192, 0) And Slide9.Shapes("(설정)버튼-플레이순서-랜덤").Fill.ForeColor.RGB = RGB(217, 217, 217) Then
+   Call 이번차례_초기배열_고정
+ElseIf Slide9.Shapes("(설정)버튼-플레이순서-랜덤").Fill.ForeColor.RGB = RGB(255, 192, 0) And Slide9.Shapes("(설정)버튼-플레이순서-지정").Fill.ForeColor.RGB = RGB(217, 217, 217) Then
+   Call 이번차례_초기배열_랜덤
+Else '둘다 비활성화 또는 선택된경우
+   MsgBox ("지정 순서 또는 랜덤 순서 중 하나를 선택해주세요")
+   Exit Sub
+End If
+   
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 모둠판 설정 모둠수에 맞게 보이기
+
+   ' 타켓 개체의 이름 (shapeName) 설정
+    shapeName = "(설정)모둠수"
+    GNumbers = Slide9.Shapes(shapeName).TextFrame.TextRange.Text '■개체 이름으로 타켓 개체의 값 정의하기
+
+
+    '--------------------------------------------------------------
+    '모든 모둠 보이기 처리
+    For NowGNumber = 1 To 8
+        Slide10.Shapes("(" & NowGNumber & "모둠)그룹전체").Visible = True
+    Next NowGNumber
+    '--------------------------------------------------------------
+
+
+If GNumbers < 8 Then
+    
+    '--------------------------------------------------------------
+    '설정모둠보다 큰 수의 모둠은 숨기기 처리
+    For NowGNumber = GNumbers + 1 To 8
+        Slide10.Shapes("(" & NowGNumber & "모둠)그룹전체").Visible = False
+    Next NowGNumber
+    '--------------------------------------------------------------
+
+ElseIf GNumbers >= 8 Then
+    '--------------------------------------------------------------
+    '숨기기 처리 개체 없음
+    '--------------------------------------------------------------
+
+End If
+'----------------------------------------------------------------------------------------------------------------
+
+
+'--------------------------------------------
+'■■■ 퀴즈수가 필요로하는 퀴즈 C보다 작은경우 처리
+lastSlide = ActivePresentation.Slides.count
+QuizCount = ((lastSlide + 1) - 70) / 3 '문제은행 총 문제 수 카운트 ■■■■■문제은행이 ★세팅★설정(70)페이지 부터 시작하며 한 문제당 ★세팅★설정(3)페이지씩 차지
+
+If QuizCount < 1 Then
+MsgBox ("슬라이드에 문제가 없습니다. 최소 문제 슬라이드를 만들어 주세요.")
+Exit Sub
+Else
+End If
+'--------------------------------------------
+
+
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤슬라이드이동 랜덤숫자 생성
+Call 랜덤슬라이드이동_랜덤숫자생성
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤슬라이드이동 랜덤아이템숫자 생성
+Call 랜덤슬라이드이동_랜덤아이템숫자생성
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤 문제카드 설정
+'Call 랜덤문제카드_설정(미사용: 이동액션자체에 랜덤하여 이동하게 끔 설정)
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■문제카드 모두 보이게 초기화
+Call 문제카드_모두보이기
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■페이지 초기화 설정
+Call 초기화_게임시작설정
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■크레딧그룹 열기 설정
+Call 크레딧_열기
+
+
+
+'----------------------------------------------------------------------------------------------------------------
+
+        '----------------------------
+        '★★★★모둠별 보상 점수 초기화
+        For i = 1 To 8
+        NowGroupScore(i) = "0"
+        Next i
+        '----------------------------
+
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 슬라이드 이동
+SlideShowWindows(1).View.GotoSlide 10
+
+
+End Sub
+
+Sub 버튼_게임이어서시작하기()
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 보안 확인
+Call ChkLock_설정확인
+
+If ChkLock = True Then
+    Call 보안_문서수정확인
+ElseIf ChkLock = False Then
+    'MsgBox ("진행함")
+End If
+   
+'------------------------------------
+'보안마크 검사 후 매크로 진행여부
+Call 보안마크_검사
+
+If ChkWaterMark <> 1 Then
+Exit Sub
+End If
+'------------------------------------
+   
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 플레이순서 기본세팅 ■■■
+'★★★★★★이어서 하기 만의 코드
+
+ Call 이번차례_초기배열_고정
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 모둠판 설정 모둠수에 맞게 보이기
+
+   ' 타켓 개체의 이름 (shapeName) 설정
+    shapeName = "(설정)모둠수"
+    GNumbers = Slide9.Shapes(shapeName).TextFrame.TextRange.Text '■개체 이름으로 타켓 개체의 값 정의하기
+
+
+    '--------------------------------------------------------------
+    '모든 모둠 보이기 처리
+    For NowGNumber = 1 To 8
+        Slide10.Shapes("(" & NowGNumber & "모둠)그룹전체").Visible = True
+    Next NowGNumber
+    '--------------------------------------------------------------
+
+
+If GNumbers < 8 Then
+    
+    '--------------------------------------------------------------
+    '설정모둠보다 큰 수의 모둠은 숨기기 처리
+    For NowGNumber = GNumbers + 1 To 8
+        Slide10.Shapes("(" & NowGNumber & "모둠)그룹전체").Visible = False
+    Next NowGNumber
+    '--------------------------------------------------------------
+
+ElseIf GNumbers >= 8 Then
+    '--------------------------------------------------------------
+    '숨기기 처리 개체 없음
+    '--------------------------------------------------------------
+
+End If
+'----------------------------------------------------------------------------------------------------------------
+
+
+'--------------------------------------------
+'■■■ 퀴즈수가 필요로하는 퀴즈 C보다 작은경우 처리
+lastSlide = ActivePresentation.Slides.count
+QuizCount = ((lastSlide + 1) - 70) / 3 '문제은행 총 문제 수 카운트 ■■■■■문제은행이 ★세팅★설정(70)페이지 부터 시작하며 한 문제당 ★세팅★설정(3)페이지씩 차지
+
+If QuizCount < 1 Then
+MsgBox ("슬라이드에 문제가 없습니다. 최소 문제 슬라이드를 만들어 주세요.")
+Exit Sub
+Else
+End If
+'--------------------------------------------
+
+
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤슬라이드이동 랜덤숫자 생성
+Call 랜덤슬라이드이동_랜덤숫자생성
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤슬라이드이동 랜덤아이템숫자 생성
+Call 랜덤슬라이드이동_랜덤아이템숫자생성
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤 문제카드 설정
+'Call 랜덤문제카드_설정(미사용: 이동액션자체에 랜덤하여 이동하게 끔 설정)
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■문제카드 모두 보이게 초기화
+'Call 문제카드_모두보이기
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■크레딧그룹 열기 설정
+Call 크레딧_열기
+
+
+'----------------------------------------------------------------------------------------------------------------
+
+        '----------------------------
+        '★★★★모둠별 보상 점수 초기화
+        For i = 1 To 8
+        NowGroupScore(i) = "0"
+        Next i
+        '----------------------------
+
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 슬라이드 이동
+SlideShowWindows(1).View.GotoSlide 10
+
+
+'★이어서하기 추가 코드
+ NowGNumber = Left(Slide9.Shapes("(설정)플레이순서지정").TextFrame.TextRange.Text, 1)
+ currentIndex = 2 '처음시작할 때 currentIndex값은 2로 시작함.
+
+End Sub
+
+Sub 버튼_문제카드_다시만들기()
+
+  '---------------------------------------------------------------------------------------------------------------
+  Dim answer As VbMsgBoxResult
+  answer = MsgBox("확인을 하면 문제카드가 다시 생성되고 문제와 보상 등이 다시 배치됩니다." & vbCrLf & "계속 진행하여 문제카드를 생성하시겠습니까?", vbYesNo)
+ 
+ If answer = vbYes Then
+ 'Yes를 선택한 경우 실행할 코드
+ 'Call 버튼_게임시작하기 '■
+            
+  Else
+ ' No를 선택한 경우 실행할 코드
+   Exit Sub
+                
+  End If
+ '---------------------------------------------------------------------------------------------------------------
+ 
+ '----------------------------------------------------------------------------------------------------------------
+'■■■랜덤슬라이드이동 랜덤숫자 생성
+Call 랜덤슬라이드이동_랜덤숫자생성
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤슬라이드이동 랜덤아이템숫자 생성
+Call 랜덤슬라이드이동_랜덤아이템숫자생성
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■랜덤 문제카드 설정
+'Call 랜덤문제카드_설정(미사용: 이동액션자체에 랜덤하여 이동하게 끔 설정)
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■문제카드 모두 보이게 초기화
+Call 문제카드_모두보이기
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■크레딧그룹 열기 설정
+'Call 크레딧_열기
+
+'----------------------------------------------------------------------------------------------------------------
+'■■■ 슬라이드 이동
+'SlideShowWindows(1).View.GotoSlide 10
+
+
+End Sub
+
+
+Sub 이번차례_초기배열_고정()
+
+    '------------------------------------------------------------------------------------------------------------
+    ' 타켓 개체의 이름 (shapeName) 설정
+    shapeName = "(설정)모둠수"
+
+     '<슬라이드 순환> 'Slide9 이름의 슬라이드 찾기
+    For Each mySlide In ActivePresentation.Slides
+            If mySlide.Name = "Slide9" Then '■슬라이드 이름으로 타켓 슬라이드 찾기
+               GNumbers = mySlide.Shapes(shapeName).TextFrame.TextRange.Text '■개체 이름으로 타켓 개체의 값 정의하기
+            Exit For
+        End If
+    Next mySlide
+    '------------------------------------------------------------------------------------------------------------
+
+
+    '------------------------------------------------------------------------------------------------------------
+    ' 타켓 개체의 이름 (shapeName) 설정
+    shapeName = "(설정)플레이순서지정"
+
+     '<슬라이드 순환> 'Slide9 이름의 슬라이드 찾기
+    For Each mySlide In ActivePresentation.Slides
+            If mySlide.Name = "Slide9" Then '■슬라이드 이름으로 타켓 슬라이드 찾기
+               
+               fixedNumbers = mySlide.Shapes(shapeName).TextFrame.TextRange.Text '■개체 이름으로 타켓 개체의 값 정의하기
+            Exit For
+        End If
+    Next mySlide
+    '------------------------------------------------------------------------------------------------------------
+
+For i = 1 To GNumbers
+    myNumbers(i) = Mid(fixedNumbers, i, 1)
+Next i
+
+' 인덱스 초기화
+currentIndex = 1
+
+
+
+    '------------------------------------------------------------------------------------------------------------
+    ' 버튼 활성화 색상 표시
+             Slide9.Shapes("(설정)버튼-플레이순서-지정").Fill.ForeColor.RGB = RGB(255, 192, 0) '■선택색상으로 변환
+             Slide9.Shapes("(설정)버튼-플레이순서-랜덤").Fill.ForeColor.RGB = RGB(217, 217, 217) '■비활성색상으로 변환
+    '------------------------------------------------------------------------------------------------------------
+
+
+End Sub
+
+
+
+Sub 이번차례_초기배열_랜덤()
+    Dim i As Integer
+    Dim temp As Integer
+    Dim randIndex As Integer
+    
+    
+    '------------------------------------------------------------------------------------------------------------
+    ' 타켓 개체의 이름 (shapeName) 설정
+    shapeName = "(설정)모둠수"
+
+     '<슬라이드 순환> 'Slide9 이름의 슬라이드 찾기
+    For Each mySlide In ActivePresentation.Slides
+            If mySlide.Name = "Slide9" Then '■슬라이드 이름으로 타켓 슬라이드 찾기
+               GNumbers = mySlide.Shapes(shapeName).TextFrame.TextRange.Text '■개체 이름으로 타켓 개체의 값 정의하기
+            Exit For
+        End If
+    Next mySlide
+    '------------------------------------------------------------------------------------------------------------
+    
+    
+    
+    
+    ' 배열 초기화
+    For i = 1 To GNumbers
+        myNumbers(i) = i
+    Next i
+    
+    ' 배열 무작위 섞기 (셔플)
+    For i = 1 To GNumbers
+        randIndex = Int((GNumbers - i + 1) * Rnd + i)
+        temp = myNumbers(i)
+        myNumbers(i) = myNumbers(randIndex)
+        myNumbers(randIndex) = temp
+    Next i
+    
+    ' 인덱스 초기화
+    currentIndex = 1
+    
+    
+    
+    '------------------------------------------------------------------------------------------------------------
+    ' 버튼 활성화 색상 표시
+              Slide9.Shapes("(설정)버튼-플레이순서-랜덤").Fill.ForeColor.RGB = RGB(255, 192, 0) '■선택색상으로 변환
+              Slide9.Shapes("(설정)버튼-플레이순서-지정").Fill.ForeColor.RGB = RGB(217, 217, 217) '■비활성색상으로 변환
+    '------------------------------------------------------------------------------------------------------------
+
+    
+End Sub
+
+
+Sub 버튼_턴넘기기_가림막()
+    
+    '------------------------------------------------------------------------------------------------
+    '■텍스트 상자 및 모둠차례기호에 표시하기
+    If currentIndex <= GNumbers Then
+        
+        '-----------------------------------------------------------------------------------------------
+        '■텍스트 상자에 다음 숫자 표시
+        Slide10.Shapes("메인알림텍스트").TextFrame.TextRange.Text = myNumbers(currentIndex) & "모둠"
+        currentIndex = currentIndex + 1
+        
+       '------------------------------------------------------------------------------------------------
+        '차례기호 색상 표시
+        NowGNumber = myNumbers(currentIndex - 1)
+        'MsgBox ("NowGNumber :" & NowGNumber & "  currentIndex :" & currentIndex)
+        
+        '■모든차례기호 회색으로 설정
+        For i = 1 To GNumbers
+            Slide10.Shapes("(" & i & "모둠)차례배경").Fill.ForeColor.RGB = RGB(255, 255, 255)  '#FFFFFF
+        Next i
+        
+        '이번차례 모둠 차례기호 핑크색으로 설정
+        'Slide10.Shapes("(" & NowGNumber & "모둠)차례배경").Fill.ForeColor.RGB = RGB(235, 61, 123)  ' #EB3D7B
+        'Slide10.Shapes("(" & NowGNumber & "모둠)차례배경").Fill.ForeColor.RGB = RGB(215, 199, 195)  '#D7C7C3
+         Slide10.Shapes("(" & NowGNumber & "모둠)차례배경").Fill.ForeColor.RGB = RGB(64, 194, 145)
+        '------------------------------------------------------------------------------------------------
+        
+        
+        '------------------------------------------------------------------------------------------------
+        '설정모둠 마지막이라면 (마지막 모둠 끝났을 때 바로 1모둠으로 순환되도록)
+        If currentIndex = GNumbers + 1 Then
+           currentIndex = 1
+        End If
+        '------------------------------------------------------------------------------------------------
+        
+    Else
+        Slide10.Shapes("메인알림텍스트").TextFrame.TextRange.Text = "다음 라운드"
+        currentIndex = 1
+    End If
+    '------------------------------------------------------------------------------------------------
+    
+    
+    '-------------------------------------------------------------------------------------------------
+    '■가림막 코드
+    Slide10.Shapes("(가림막)묶음").Visible = False
+    Slide10.Shapes("(가림막)텍스트1").TextFrame.TextRange.Text = "이곳을 클릭하여 다음 턴을 진행하세요!"
+    Slide10.Shapes("(가림막)텍스트2").TextFrame.TextRange.Text = "다음 차례"
+    Slide10.Shapes("(가림막)텍스트3").TextFrame.TextRange.Text = myNumbers(currentIndex) & " 모둠"
+    '------------------------------------------------------------------------------------------------
+    
+End Sub
+
+
+Sub 버튼_턴넘기기_수동()
+
+  '------------------------------------------------------------------------------------------------
+    '■텍스트 상자 및 모둠차례기호에 표시하기
+    If currentIndex <= GNumbers Then
+        
+        '-----------------------------------------------------------------------------------------------
+        '■텍스트 상자에 다음 숫자 표시
+        Slide10.Shapes("메인알림텍스트").TextFrame.TextRange.Text = myNumbers(currentIndex) & "모둠"
+        currentIndex = currentIndex + 1
+        
+       '------------------------------------------------------------------------------------------------
+        '차례기호 색상 표시
+        NowGNumber = myNumbers(currentIndex - 1)
+        'MsgBox (NowGNumber)
+        
+        '■모든차례기호 회색으로 설정
+        For i = 1 To GNumbers
+            Slide10.Shapes("(" & i & "모둠)차례배경").Fill.ForeColor.RGB = RGB(255, 255, 255)  '#FFFFFF
+        Next i
+        
+        '이번차례 모둠 차례기호 핑크색으로 설정
+        'Slide10.Shapes("(" & NowGNumber & "모둠)차례배경").Fill.ForeColor.RGB = RGB(235, 61, 123)  ' #EB3D7B
+        'Slide10.Shapes("(" & NowGNumber & "모둠)차례배경").Fill.ForeColor.RGB = RGB(215, 199, 195)  '#D7C7C3
+         Slide10.Shapes("(" & NowGNumber & "모둠)차례배경").Fill.ForeColor.RGB = RGB(64, 194, 145)
+         
+        '------------------------------------------------------------------------------------------------
+        
+        
+        '------------------------------------------------------------------------------------------------
+        '설정모둠 마지막이라면 (마지막 모둠 끝났을 때 바로 1모둠으로 순환되도록)
+        If currentIndex = GNumbers + 1 Then
+           currentIndex = 1
+        End If
+        '------------------------------------------------------------------------------------------------
+        
+    Else
+        Slide10.Shapes("메인알림텍스트").TextFrame.TextRange.Text = "다음 라운드"
+        currentIndex = 1
+    End If
+    '------------------------------------------------------------------------------------------------
+
+    '-------------------------------------------------------------------------------------------------
+    '■가림막 코드
+    Slide10.Shapes("(가림막)묶음").Visible = False
+    Slide10.Shapes("(가림막)텍스트1").TextFrame.TextRange.Text = "이곳을 클릭하여 다음 턴을 진행하세요!"
+    Slide10.Shapes("(가림막)텍스트2").TextFrame.TextRange.Text = "다음 차례"
+    Slide10.Shapes("(가림막)텍스트3").TextFrame.TextRange.Text = myNumbers(currentIndex) & " 모둠"
+    '------------------------------------------------------------------------------------------------
+
+
+End Sub
+
+Sub 버튼_자동점수반영_메인이동()
+'■자동점수반영
+
+       '------------------------------------------------------
+       '■(설정)획득점수 점수를 해당턴 모둠에 자동 반영
+        Dim TurnGroupScore As String
+        TurnGroupScore = Slide10.Shapes("(" & NowGNumber & "모둠)점수").TextFrame.TextRange.Text
+        
+            'MsgBox (NowGNumber)
+            'MsgBox (TurnGroupScore)
+        
+        Dim activeSlide As Slide
+        Set activeSlide = ActivePresentation.SlideShowWindow.View.Slide
+        
+        '현재 슬라이드 인덱스 가져오기
+        NowSlideIndex = activeSlide.slideIndex
+            'MsgBox ("현재 슬라이드 번호: " & NowSlideIndex)
+        
+        '현재 슬라이드 점수 가져오기
+        Dim NowScore As String
+        NowScore = ActivePresentation.Slides(NowSlideIndex).Shapes("(설정)획득점수").TextFrame.TextRange.Text
+            'MsgBox ("현재 슬라이드 점수:" & Score)
+        
+        Dim TotalScore As Long
+        TotalScore = CInt(TurnGroupScore) + CInt(NowScore)
+            'MsgBox ("최종반영 모둠 점수:" & TotalScore)
+        
+        '획득점수 해당턴 모둠점수에 추가★★★★
+        Slide10.Shapes("(" & NowGNumber & "모둠)점수").TextFrame.TextRange.Text = TotalScore
+        
+        '------------------------------------------------------
+
+        NowGroupScore(NowGNumber) = ActivePresentation.Slides(NowSlideIndex).Shapes("(설정)획득점수" & SelToggle).TextFrame.TextRange.Text
+        '------------------------------------------------------
+        '획득점수 기록★★★★
+        
+        '모든 그룹 0점은 "" 공란으로 변경
+        For i = 1 To 8
+            If NowGroupScore(i) = 0 Then
+                Slide10.Shapes("(" & i & "모둠)획득점수").TextFrame.TextRange.Text = "--"
+
+            Else
+            End If
+        Next i
+        
+        '해당턴 그룹만 기록
+        Slide10.Shapes("(" & NowGNumber & "모둠)획득점수").TextFrame.TextRange.Text = Replace("+ " & CInt(NowGroupScore(NowGNumber)), vbCrLf, "")
+        '------------------------------------------------------
+
+        '----------------------------
+        '★★★★모둠별 보상 점수 초기화
+        For i = 1 To 8
+        NowGroupScore(i) = "0"
+        Next i
+        '----------------------------
+        
+        
+        '-------------------------------------------------------------------------------------------------
+        '■현재 플레이 저장 코드 : 현재 플레이순서 정의 및 슬라이드9 (설정)플레이순서지정 반영 코드
+        '첫 번째 숫자를 잘라내어 문자열 끝에 추가
+        If Len(NowOrderGroup) > 1 Then
+           NowOrderGroup = Mid(NowOrderGroup, 2) & Left(NowOrderGroup, 1)
+        End If
+        'MsgBox (NowOrderGroup)
+        Slide9.Shapes("(설정)플레이순서지정").TextFrame.TextRange.Text = NowOrderGroup
+        '-------------------------------------------------------------------------------------------------
+
+        
+               
+        
+        
+        '------------------------------------------------------
+        '슬라이드 10으로 이동
+        SlideShowWindows(1).View.GotoSlide 10
+        
+        
+
+End Sub
+
+Sub 버튼_자동점수반영_아이템이동()
+'■자동점수반영
+       
+       '------------------------------------------------------
+       '(설정)획득점수 점수를 해당턴 모둠에 자동 반영
+        Dim TurnGroupScore As String
+        TurnGroupScore = Slide10.Shapes("(" & NowGNumber & "모둠)점수").TextFrame.TextRange.Text
+        
+            'MsgBox (NowGNumber)
+            'MsgBox (TurnGroupScore)
+        
+        Dim activeSlide As Slide
+        Set activeSlide = ActivePresentation.SlideShowWindow.View.Slide
+        
+        '현재 슬라이드 인덱스 가져오기
+        NowSlideIndex = activeSlide.slideIndex
+             'MsgBox ("현재 슬라이드 번호: " & NowSlideIndex)
+        
+        '현재 슬라이드 점수 가져오기
+        Dim NowScore As String
+        NowScore = ActivePresentation.Slides(NowSlideIndex).Shapes("(설정)획득점수").TextFrame.TextRange.Text  '★수정중
+             'MsgBox ("현재 슬라이드 점수:" & Score)
+        
+        Dim TotalScore As Long
+        TotalScore = CInt(TurnGroupScore) + CInt(NowScore)
+             'MsgBox ("최종반영 모둠 점수:" & TotalScore)
+        
+        '획득점수 해당턴 모둠점수에 추가★★★★
+        Slide10.Shapes("(" & NowGNumber & "모둠)점수").TextFrame.TextRange.Text = TotalScore
+        
+        '------------------------------------------------------
+
+        
+        NowGroupScore(NowGNumber) = ActivePresentation.Slides(NowSlideIndex).Shapes("(설정)획득점수" & SelToggle).TextFrame.TextRange.Text
+        '------------------------------------------------------
+        '획득점수 기록★★★★
+        
+        '모든 그룹 0점은 "" 공란으로 변경
+        For i = 1 To 8
+            If NowGroupScore(i) = 0 Then
+                Slide10.Shapes("(" & i & "모둠)획득점수").TextFrame.TextRange.Text = "--"
+            Else
+            End If
+        Next i
+        
+        '해당턴 그룹만 기록
+        Slide10.Shapes("(" & NowGNumber & "모둠)획득점수").TextFrame.TextRange.Text = Replace("+ " & CInt(NowGroupScore(NowGNumber)), vbCrLf, "")
+        '------------------------------------------------------
+        
+        '----------------------------
+        '★★★★모둠별 보상 점수 초기화
+        For i = 1 To 8
+        NowGroupScore(i) = "0"
+        Next i
+        '----------------------------
+
+
+        '-------------------------------------------------------------------------------------------------
+        '■현재 플레이 저장 코드 : 현재 플레이순서 정의 및 슬라이드9 (설정)플레이순서지정 반영 코드
+        '첫 번째 숫자를 잘라내어 문자열 끝에 추가
+        If Len(NowOrderGroup) > 1 Then
+           NowOrderGroup = Mid(NowOrderGroup, 2) & Left(NowOrderGroup, 1)
+        End If
+        'MsgBox (NowOrderGroup)
+        Slide9.Shapes("(설정)플레이순서지정").TextFrame.TextRange.Text = NowOrderGroup
+        '-------------------------------------------------------------------------------------------------
+
+
+        
+        '------------------------------------------------------
+        '슬라이드 19으로 이동
+        SlideShowWindows(1).View.GotoSlide 19
+        
+        
+
+End Sub
+
+
+Sub 버튼_자동아이템반영_메인이동()
+'■자동점수반영
+       
+       
+'현재 슬라이드 인덱스 가져오기
+Dim activeSlide As Slide
+Set activeSlide = ActivePresentation.SlideShowWindow.View.Slide
+NowSlideIndex = activeSlide.slideIndex
+
+     
+       
+      '------------------------------------------------------
+       '■(설정)획득아이템를 해당턴 모둠에 자동 반영
+        Dim GroupCount As Integer
+        GroupCount = 8 '8모둠까지
+      
+        '모든 그룹 아이템 없음 설정
+        For i = 1 To GroupCount
+            NowGroupItemOX(i) = ""
+        Next i
+
+        '현재 그룹만 아이템 있음 설정
+        NowGroupItemOX(NowGNumber) = "(" & ActivePresentation.Slides(NowSlideIndex).Shapes("(설정)아이템이름").TextFrame.TextRange.Text & ")"
+        '------------------------------------------------------
+        '획득점수 기록에 아이템명 추가★★★★
+        For i = 1 To GroupCount
+          If NowGroupItemOX(i) <> "" Then
+             Slide10.Shapes("(" & i & "모둠)획득점수").TextFrame.TextRange.Text = Slide10.Shapes("(" & i & "모둠)획득점수").TextFrame.TextRange.Text & vbCr & NowGroupItemOX(i)
+          End If
+        Next i
+        '------------------------------------------------------
+
+        '----------------------------
+        '★★★★모둠별 획득아이템확인 초기화
+        For i = 1 To 8
+        NowGroupItemOX(i) = ""
+        Next i
+        '----------------------------
+
+
+       
+        '------------------------------------------------------
+        '슬라이드 19으로 이동
+        SlideShowWindows(1).View.GotoSlide 10
+        
+        
+
+End Sub
+
+Sub 크레딧_열기()
+    Dim Slide As Slide
+    Dim CreaditGroup As shape
+
+    ' "(크레딧그룹)" 모양 가져오기
+    Set CreaditGroup = Slide10.Shapes("(크레딧그룹)")
+    
+   
+    ' "(크레딧그룹)" 모양을 화면 중앙으로 이동
+    With CreaditGroup
+        .Left = (Slide10.Parent.PageSetup.SlideWidth - .Width) / 2
+        .Top = (Slide10.Parent.PageSetup.SlideHeight - .Height) / 2
+        .Visible = True '활성화 하면 그룹네 모든 개체가 숨김취소됨.
+    End With
+      
+
+End Sub
+
+Sub 크레딧_닫기()
+    Dim Slide As Slide
+
+    ' "(주사위)1" 모양 가져오기
+    Set CreaditGroup = Slide10.Shapes("(크레딧그룹)")
+    
+    ' "(주사위)1" 모양 숨기기
+    CreaditGroup.Visible = False
+End Sub
+
+==== MODULE: OderGroupForm.frm (20 lines) ====
+Attribute VB_Name = "OderGroupForm"
+Attribute VB_Base = "0{2B00081C-DEF3-4A64-9BD5-55A67D26D0F8}{C64AEB79-648F-472D-B803-54BCEB791760}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = False
+Private Sub CommandButton1_Click()
+
+Call 기본_현재슬라이드_모둠지정순서변경_유저폼_변경하기버튼
+
+End Sub
+
+Private Sub CommandButton2_Click()
+
+Call 기본_현재슬라이드_모둠지정순서변경_유저폼_닫기
+    
+End Sub
+
+
+==== MODULE: Module5.bas (445 lines) ====
+Attribute VB_Name = "Module5"
+'####### 아래 코드 실행코드에 삽입하기 #########
+'------------------------------------
+'보안마크 검사 후 매크로 진행여부
+'Call 보안마크_검사
+
+'If ChkWaterMark <> 1 Then
+'Exit Sub
+'End If
+'------------------------------------
+
+
+Public ChkLock As Boolean
+Public ChkWaterMark As Long
+Sub 보안_문서수정확인()
+
+    Dim ChkText1 As String
+    Dim Slide As Slide
+    Dim shape As shape
+    Dim foundTitle As Boolean
+    Dim currentText As String
+    Dim actualCount As Integer ' 실제 (타이틀체크)텍스트 개체의 개수
+    Dim expectedCount1 As Integer  ' 기대하는 개체의 개수 (updatedCount 값)
+
+    ' 설정할 변수
+    expectedCount1 = 4    '★★★(변경)★★★★ 앞서 정의한 updatedCount 값과 동일하게 설정
+    'ChkText1 = "타이틀" '★★★(변경)★★★★★ 보안 설정 텍스트
+    ChkText2 = "YANGSONGI TEACHER’S" '보안 설정 텍스트
+    ChkText3 = "LUCKYTEM STUDIO" '보안 설정 텍스트
+    
+    foundTitle1 = False
+    foundTitle2 = False
+    foundTitle3 = False
+    actualCount1 = 0 ' 초기화
+    actualCount2 = 0 ' 초기화
+    actualCount3 = 0 ' 초기화
+
+    ' 모든 슬라이드를 순회
+      
+
+    For Each Slide In ActivePresentation.Slides
+        '----------------------------------------------------------------------------------------------
+        '■ 옵션선택
+        'For Each shape In Slide.Shapes
+        '    ' 개체 이름이 (타이틀체크)텍스트인지 확인
+        '    If shape.Name = "(타이틀체크)텍스트" Then
+        '        foundTitle1 = True ' (타이틀체크)텍스트 개체를 찾음
+        '        actualCount1 = actualCount1 + 1 ' 실제 개수 증가
+        '        currentText = shape.TextFrame.TextRange.Text ' 텍스트 값 가져오기
+        '
+        '        ' 텍스트 값이 ChkText1와 다른 경우 매크로 종료
+        '        If currentText <> ChkText1 Then
+        '            MsgBox "［안내코드１］배포 문서 수정이 확인되어 매크로 사용을 중지합니다. 문서 수정 및 활용을 위해서는 정식 버전을 이용해주세요.", vbExclamation
+        '            End ' 전체 매크로 중단
+        '        End If
+        '    End If
+        'Next shape
+        '----------------------------------------------------------------------------------------------
+        
+        For Each shape In Slide.Shapes
+            ' 개체 이름이 (타이틀체크)양송이샘 인지 확인
+            If shape.Name = "(타이틀체크)양송이샘" Then
+                foundTitle2 = True ' (타이틀체크)양송이샘 개체를 찾음
+                actualCount2 = actualCount2 + 1 ' 실제 개수 증가
+                currentText = shape.TextFrame.TextRange.Text ' 텍스트 값 가져오기
+                
+                ' 텍스트 값이 ChkText２와 다른 경우 매크로 종료
+                If currentText <> ChkText2 Then
+                    MsgBox "［안내코드２］배포 문서 수정이 확인되어 매크로 사용을 중지합니다. 문서 수정 및 활용을 위해서는 정식 버전을 이용해주세요.", vbExclamation
+                    End ' 전체 매크로 중단
+                End If
+            End If
+        Next shape
+        
+        
+        For Each shape In Slide.Shapes
+            ' 개체 이름이 (타이틀체크)득템공방 인지 확인
+            If shape.Name = "(타이틀체크)득템공방" Then
+                foundTitle3 = True ' (타이틀체크)양송이샘 개체를 찾음
+                actualCount3 = actualCount3 + 1 ' 실제 개수 증가
+                currentText = shape.TextFrame.TextRange.Text ' 텍스트 값 가져오기
+                
+                ' 텍스트 값이 ChkText３와 다른 경우 매크로 종료
+                If currentText <> ChkText3 Then
+                    MsgBox "［안내코드３］배포 문서 수정이 확인되어 매크로 사용을 중지합니다. 문서 수정 및 활용을 위해서는 정식 버전을 이용해주세요.", vbExclamation
+                    End ' 전체 매크로 중단
+                End If
+            End If
+        Next shape
+        
+    Next Slide
+    
+
+    
+    '----------------------------------------------------------------------------------------------
+    '■ 옵션선택
+    ' 개체 개수가 기대값과 일치하지 않는 경우 매크로 종료
+    'If actualCount1 <> expectedCount1 Then
+    '    MsgBox "［안내코드４］배포 문서 수정이 확인되어 매크로 사용을 중지합니다. 문서 수정 및 활용을 위해서는 정식 버전을 이용해주세요.", vbExclamation
+    '    End ' 전체 매크로 중단
+    'End If
+    '----------------------------------------------------------------------------------------------
+
+
+    '----------------------------------------------------------------------------------------------
+    '■ 옵션선택
+    ' (타이틀체크)텍스트 개체를 찾지 못한 경우 매크로 종료
+    'If Not foundTitle1 Or Not foundTitle2 Or Not foundTitle3 Then
+    If Not foundTitle2 Or Not foundTitle3 Then
+        MsgBox "［안내코드５］배포 문서 수정이 확인되어 매크로 사용을 중지합니다. 문서 수정 및 활용을 위해서는 정식 버전을 이용해주세요.", vbExclamation
+        End ' 전체 매크로 중단
+    End If
+
+    ' 모든 조건을 만족하는 경우 추가 동작이 있을 경우 여기에 작성
+    ' MsgBox "모든 조건이 만족되었습니다.", vbInformation
+
+
+
+End Sub
+
+
+Sub 보안_텍스트_일괄입력()
+
+
+    Dim ChkText1 As String
+    Dim Slide As Slide
+    Dim shape As shape
+    Dim foundTitle As Boolean
+    Dim updatedCount As Integer
+    Dim NowSlideIndex As Integer
+    
+    ' 현재 슬라이드 인덱스 가져오기
+    Dim activeSlide As Slide
+    Set activeSlide = ActivePresentation.SlideShowWindow.View.Slide
+    NowSlideIndex = activeSlide.slideIndex
+    
+    ' 보안 텍스트 가져오기
+    ChkText1 = ActivePresentation.Slides(NowSlideIndex).Shapes("(버튼)보안텍스트").TextFrame.TextRange.Text
+
+    updatedCount = 0
+    foundTitle = False
+    
+    ' 일반 슬라이드 순회
+    For Each Slide In ActivePresentation.Slides
+        For Each shape In Slide.Shapes
+            If shape.Name = "(타이틀체크)텍스트" Then
+                shape.TextFrame.TextRange.Text = ChkText1
+                updatedCount = updatedCount + 1
+                foundTitle = True
+            End If
+        Next shape
+    Next Slide
+
+    ' 모든 디자인의 슬라이드 마스터 및 레이아웃 순회
+    Dim design As design
+    Dim master As master
+    Dim layout As CustomLayout
+
+    For Each design In ActivePresentation.Designs
+        Set master = design.SlideMaster
+
+        ' 마스터 자체의 도형들
+        For Each shape In master.Shapes
+            If shape.Name = "(타이틀체크)텍스트" Then
+                shape.TextFrame.TextRange.Text = ChkText1
+                updatedCount = updatedCount + 1
+                foundTitle = True
+            End If
+        Next shape
+
+        ' 마스터의 각 레이아웃
+        For Each layout In master.CustomLayouts
+            For Each shape In layout.Shapes
+                If shape.Name = "(타이틀체크)텍스트" Then
+                    shape.TextFrame.TextRange.Text = ChkText1
+                    updatedCount = updatedCount + 1
+                    foundTitle = True
+                End If
+            Next shape
+        Next layout
+    Next design
+
+    ' 결과 알림
+    If Not foundTitle Then
+        MsgBox "(타이틀체크)텍스트 개체가 없습니다.", vbExclamation
+    Else
+        MsgBox "보안 텍스트 일괄입력이 완료되었습니다." & vbCrLf & "총 입력된 개체 수: " & updatedCount, vbInformation
+    End If
+
+
+End Sub
+
+
+
+Sub ChkLock_설정확인()
+
+    Dim Slide As Slide
+    Dim shape As shape
+    Dim found As Boolean
+
+    ' 초기값 설정
+    ChkLock = True ' 기본값
+    found = False ' 개체 발견 여부 초기화
+
+    ' 모든 슬라이드 순회
+    For Each Slide In ActivePresentation.Slides
+        For Each shape In Slide.Shapes
+            ' 개체 이름 확인
+            If shape.Name = "(버튼)보안묶음-온오프" Then
+                found = True ' 개체를 찾았음을 표시
+                ' 개체의 Visible 속성 확인
+                If shape.Visible = msoTrue Then
+                    ChkLock = False ' 보이는 상태라면 False
+                Else
+                    ChkLock = True ' 숨김 상태라면 True
+                End If
+                Exit For ' 개체를 찾았으니 더 이상 확인하지 않음
+            End If
+        Next shape
+        If found Then Exit For ' 개체를 찾으면 더 이상 슬라이드를 확인하지 않음
+    Next Slide
+
+End Sub
+
+
+
+
+
+Sub 보안마크_검사결과_진행여부()
+   
+    Select Case ChkWaterMark
+        Case 0
+            
+            MsgBox "보안경고: 저작권 표시 워터마크 무결성 확인이 이루어지지 않았습니다. F5를 눌러 게임을 처음부터 실행해주세요.", vbExclamation, "보안 경고"
+            Exit Sub
+        Case -1
+            MsgBox "보안경고: 저작권 표시 워터마크가 제거되었거나 수정되어 매크로 사용이 중지됩니다.", vbCritical, "보안 경고"
+            Exit Sub
+        Case 1
+            ' 정상적인 경우 계속 실행
+    End Select
+End Sub
+
+
+Sub 보안마크_검사_1()
+    Dim masterSlide As Object
+    Dim layout As CustomLayout
+    Dim shape As shape
+    Dim shapeName As Variant
+    Dim originalTexts As Object
+    Dim originalImages As Object
+    Dim isValid As Boolean
+
+    ' 검사 상태 초기화
+    ChkWaterMark = 0 ' 아직 검사되지 않음
+    isValid = True
+
+    ' 검사할 개체 리스트 (텍스트 개체 및 이미지 개체)
+    Set originalTexts = CreateObject("Scripting.Dictionary")
+    Set originalImages = CreateObject("Scripting.Dictionary")
+
+    ' 원본 텍스트 개체 등록 (개체명 -> 원래 텍스트 값)
+    originalTexts.Add "(보안마크)PRODUCED BY", "PRODUCED BY"
+    originalTexts.Add "(보안마크)YANGSONGI TEACHER'S", "YANGSONGI TEACHER’S"
+    originalTexts.Add "(보안마크)LUCKYTEM STUDIO", "LUCKYTEM STUDIO"
+
+    ' 원본 이미지 개체 등록 (개체명 -> 존재 여부만 검사)
+    originalImages.Add "(보안마크)양송이싸인", True
+    originalImages.Add "(보안마크)득템공방로고", True
+
+    ' 슬라이드 마스터 가져오기
+    On Error Resume Next
+    Set masterSlide = ActivePresentation.Designs(1).SlideMaster
+    If masterSlide Is Nothing Then Set masterSlide = ActivePresentation.SlideMaster
+    On Error GoTo 0
+
+    ' 마스터 슬라이드를 가져오지 못한 경우 오류 메시지
+    If masterSlide Is Nothing Then
+        MsgBox "오류: 슬라이드 마스터를 찾을 수 없습니다!", vbCritical, "오류"
+        ChkWaterMark = -1
+        Exit Sub
+    End If
+
+    ' 1. 텍스트 개체 검사 (마스터 및 레이아웃 포함)
+    For Each shapeName In originalTexts.Keys
+        On Error Resume Next
+        Set shape = masterSlide.Shapes(shapeName) ' 마스터에서 검색
+        On Error GoTo 0
+
+        If shape Is Nothing Then
+            ' 마스터에서 개체를 찾지 못한 경우, 레이아웃에서 검색
+            For Each layout In masterSlide.CustomLayouts
+                On Error Resume Next
+                Set shape = layout.Shapes(shapeName)
+                On Error GoTo 0
+                If Not shape Is Nothing Then Exit For ' 찾으면 종료
+            Next layout
+        End If
+
+        ' 개체 검증
+        If shape Is Nothing Or shape.TextFrame.TextRange.Text <> originalTexts(shapeName) Then
+            isValid = False
+        End If
+    Next shapeName
+
+    ' 2. 이미지 개체 검사 (마스터 및 레이아웃 포함)
+    For Each shapeName In originalImages.Keys
+        On Error Resume Next
+        Set shape = masterSlide.Shapes(shapeName)
+        On Error GoTo 0
+
+        If shape Is Nothing Then
+            ' 마스터에서 개체를 찾지 못한 경우, 레이아웃에서 검색
+            For Each layout In masterSlide.CustomLayouts
+                On Error Resume Next
+                Set shape = layout.Shapes(shapeName)
+                On Error GoTo 0
+                If Not shape Is Nothing Then Exit For
+            Next layout
+        End If
+
+        ' 개체 검증
+        If shape Is Nothing Then
+            isValid = False
+        End If
+    Next shapeName
+
+    ' 3. 최종 확인
+    If isValid Then
+        ChkWaterMark = 1 ' 정상
+    Else
+        ChkWaterMark = -1 ' 보안마크 수정 또는 삭제됨
+        Call 보안마크_검사결과_진행여부 '■보안 경고 실행
+        Exit Sub
+    End If
+    
+End Sub
+
+Sub 보안마크_검사()
+    Dim masterSlide As Object
+    Dim layout As CustomLayout
+    Dim shape As shape
+    Dim shapeName As Variant
+    Dim originalTexts As Object, originalImages As Object
+    Dim isValid As Boolean
+    
+    '▼―[새로 추가] : 워터마크 그룹 기준값-----------------------------------
+    Const WM_GRP_NAME As String = "(보안마크)그룹"
+    Const EXPECTED_LEFT   As Single = 747.8213        '■■■■■워터마크 위치정보' ← 원본 좌표/크기를 넣어주세요
+    Const EXPECTED_TOP    As Single = 0               '■■■■■워터마크 위치정보
+    Const EXPECTED_WIDTH  As Single = 206.0672        '■■■■■워터마크 위치정보
+    Const EXPECTED_HEIGHT As Single = 32.12134        '■■■■■워터마크 위치정보
+    Const TOL             As Single = 0.1      ' 허용 오차(포인트)
+    '▲--------------------------------------------------------------------
+    
+    ' 검사 상태 초기화
+    ChkWaterMark = 0
+    isValid = True
+    
+    ' 검사 대상 사전
+    Set originalTexts = CreateObject("Scripting.Dictionary")
+    Set originalImages = CreateObject("Scripting.Dictionary")
+    
+    originalTexts.Add "(보안마크)PRODUCED BY", "PRODUCED BY"
+    originalTexts.Add "(보안마크)YANGSONGI TEACHER'S", "YANGSONGI TEACHER’S"
+    originalTexts.Add "(보안마크)LUCKYTEM STUDIO", "LUCKYTEM STUDIO"
+    
+    originalImages.Add "(보안마크)양송이싸인", True
+    originalImages.Add "(보안마크)득템공방로고", True
+    
+    ' 슬라이드 마스터
+    On Error Resume Next
+    Set masterSlide = ActivePresentation.Designs(1).SlideMaster
+    If masterSlide Is Nothing Then Set masterSlide = ActivePresentation.SlideMaster
+    On Error GoTo 0
+    
+    If masterSlide Is Nothing Then
+        MsgBox "오류: 슬라이드 마스터를 찾을 수 없습니다!", vbCritical
+        ChkWaterMark = -1
+        Exit Sub
+    End If
+    
+    '―[1] 텍스트 검사 -----------------------------------------------------
+    For Each shapeName In originalTexts.Keys
+        Set shape = Nothing
+        On Error Resume Next: Set shape = masterSlide.Shapes(shapeName): On Error GoTo 0
+        If shape Is Nothing Then
+            For Each layout In masterSlide.CustomLayouts
+                On Error Resume Next: Set shape = layout.Shapes(shapeName): On Error GoTo 0
+                If Not shape Is Nothing Then Exit For
+            Next
+        End If
+        
+        If shape Is Nothing Or shape.TextFrame.TextRange.Text <> originalTexts(shapeName) Then
+            isValid = False
+        End If
+    Next
+    
+    '―[2] 이미지 검사 -----------------------------------------------------
+    For Each shapeName In originalImages.Keys
+        Set shape = Nothing
+        On Error Resume Next: Set shape = masterSlide.Shapes(shapeName): On Error GoTo 0
+        If shape Is Nothing Then
+            For Each layout In masterSlide.CustomLayouts
+                On Error Resume Next: Set shape = layout.Shapes(shapeName): On Error GoTo 0
+                If Not shape Is Nothing Then Exit For
+            Next
+        End If
+        
+        If shape Is Nothing Then isValid = False
+    Next
+    
+    '―[3] 그룹 위치/크기 + 최상단으로 끌어올리기 --------------------------
+    Dim grp As shape: Set grp = Nothing
+    On Error Resume Next
+    Set grp = masterSlide.Shapes(WM_GRP_NAME)
+    On Error GoTo 0
+    
+    If grp Is Nothing Then
+        isValid = False                     ' 그룹 자체가 없으면 실패
+    Else
+        ' ① 위치·크기 검증
+        If Abs(grp.Left - EXPECTED_LEFT) > TOL _
+        Or Abs(grp.Top - EXPECTED_TOP) > TOL _
+        Or Abs(grp.Width - EXPECTED_WIDTH) > TOL _
+        Or Abs(grp.Height - EXPECTED_HEIGHT) > TOL Then
+            isValid = False
+        End If
+        
+        ' ② 최상단 배치 (Z?Order가 1이 아니면 BringToFront)
+        If grp.ZOrderPosition <> 1 Then
+            grp.ZOrder msoBringToFront
+            '※ 굳이 검사에 실패 처리할 필요가 없으므로 isValid는 변경하지 않음
+        End If
+    End If
+    '▲--------------------------------------------------------------
+    
+    '―[4] 결과 처리 -------------------------------------------------------
+    If isValid Then
+        ChkWaterMark = 1    ' 정상
+    Else
+        ChkWaterMark = -1   ' 변조 감지
+        Call 보안마크_검사결과_진행여부
+    End If
+End Sub
+
+==== MODULE: frmExportImages.frm (118 lines) ====
+Attribute VB_Name = "frmExportImages"
+Attribute VB_Base = "0{D96457F0-FA0B-4EF2-93BF-5A198885CA54}{41FC6D80-5CEF-42AF-9889-F2979213FAC4}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = False
+
+Private Sub UserForm_Initialize()
+
+
+        Dim baseName As String
+        Dim fileName As String
+
+        '?1) 원본 파일 이름 가져오기
+        fileName = ActivePresentation.Name
+        
+        '?2) 확장자 잘라내기
+        If InStrRev(fileName, ".") > 0 Then _
+            fileName = Left(fileName, InStrRev(fileName, ".") - 1)
+         
+        '?3) 마지막 밑줄( _ ) 이후 부분 잘라내기
+        If InStrRev(fileName, "_") > 0 Then _
+            baseName = Left(fileName, InStrRev(fileName, "_") - 1) _
+        Else _
+            baseName = fileName
+        
+
+    '초기 썸네일 기본값
+    txtThumbnailSlide.Text = "4" '(■설정)기본 썸네일 슬라이드 번호
+    txtThumbWidth.Text = "359"  '(■설정)기본 썸네일 가로픽셀
+    txtThumbHeight.Text = "216" '(■설정)기본 썸네일 세로픽셀
+    txtThumbnailName.Text = baseName & "_섬네일"
+    
+    '초기 참고이미지 기본값
+    txtRefSlides.Text = "10,11,35,63,71" '(■설정)기본 참조 슬라이드 번호
+    txtRefWidth.Text = "1280" '(■설정)기본 참고이미지 가로픽셀
+    txtRefHeight.Text = "720" '(■설정)기본 참고이미지 세로픽셀
+    
+    txtRefBaseName.Text = baseName & "_참고이미지"
+
+
+
+
+End Sub
+
+Private Sub btnExport_Click()
+    Dim thumbSlide As Integer, thumbName As String
+    Dim thumbWidth As Long, thumbHeight As Long
+    Dim refSlidesText As String, refSlides() As String
+    Dim refBaseName As String
+    Dim refWidth As Long, refHeight As Long
+    Dim exportPath As String
+    Dim i As Integer, slideIndex As Integer
+
+    On Error GoTo ErrHandler
+
+    ' 썸네일 값
+    thumbSlide = Val(Trim(txtThumbnailSlide.Text))
+    thumbName = Trim(txtThumbnailName.Text)
+    thumbWidth = CLng(Val(txtThumbWidth.Text))
+    thumbHeight = CLng(Val(txtThumbHeight.Text))
+
+    ' 참조 이미지 값
+    refSlidesText = Trim(txtRefSlides.Text)
+    If refSlidesText = "" Then
+        MsgBox "참조 슬라이드 번호를 입력하세요.", vbExclamation
+        Exit Sub
+    End If
+
+    refSlides = Split(refSlidesText, ",")
+    refBaseName = Trim(txtRefBaseName.Text)
+    refWidth = CLng(Val(txtRefWidth.Text))
+    refHeight = CLng(Val(txtRefHeight.Text))
+
+    ' 저장 경로 확인
+    exportPath = ActivePresentation.Path & "\"
+    If exportPath = "\" Then
+        MsgBox "프레젠테이션을 먼저 저장한 후 다시 시도하세요.", vbExclamation
+        Exit Sub
+    End If
+
+    ' 썸네일 저장
+    If thumbSlide >= 1 And thumbSlide <= ActivePresentation.Slides.count Then
+        ActivePresentation.Slides(thumbSlide).Export _
+            exportPath & thumbName & ".png", "PNG", thumbWidth, thumbHeight
+    Else
+        MsgBox "썸네일 슬라이드 번호가 잘못되었습니다.", vbCritical
+        Exit Sub
+    End If
+
+    ' 참조 이미지 저장 (입력된 개수만큼 자동 처리)
+    For i = 0 To UBound(refSlides)
+        slideIndex = Val(Trim(refSlides(i)))
+        If slideIndex >= 1 And slideIndex <= ActivePresentation.Slides.count Then
+            ActivePresentation.Slides(slideIndex).Export _
+                exportPath & refBaseName & (i + 1) & ".png", "PNG", refWidth, refHeight
+        Else
+            MsgBox "참조 슬라이드 번호 " & refSlides(i) & "가 잘못되었습니다.", vbExclamation
+            Exit Sub
+        End If
+    Next i
+
+    MsgBox "모든 이미지가 성공적으로 저장되었습니다!", vbInformation
+    
+    '창 닫기
+    frmExportImages.HIde
+       
+    Exit Sub
+
+ErrHandler:
+    MsgBox "오류 발생: " & Err.Description, vbCritical
+End Sub
+
+
+
+
+
+==== MODULE: ImportUserForm.frm (25 lines) ====
+Attribute VB_Name = "ImportUserForm"
+Attribute VB_Base = "0{FB52E127-EF77-4724-80E0-702219C9A4B2}{B33A28CD-69F1-4A2D-AD76-82A079A41679}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = False
+
+
+Private Sub cmdImportData_Click()
+    기본_데이터가져오기_실행버튼 InputFileName.Text          '표준 모듈 프로시저 호출
+    Unload Me                              '폼 닫기 (필요 시)
+End Sub
+
+Private Sub CommandButton2_Click()
+
+    '유저폼 닫기
+    ImportUserForm.HIde
+    
+End Sub
+
+Private Sub UserForm_Click()
+
+End Sub
