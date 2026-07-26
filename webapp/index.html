@@ -178,6 +178,97 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
 .b-start  { left:40px;  top:629px; width:773px; height:54px; }
 .b-resume { left:830px; top:629px; width:410px; height:54px; }
 
+/* ============================================================
+   화면 3 — 메인 보드 (slide10)
+   ============================================================ */
+/* 좌상단 워터마크 */
+.wm1 { left:4px; top:-1px; width:147px; height:23px; font-size:11px; color:#5b4630; }
+.wm2 { left:5px; top:10px;  width:147px; height:26px; font-size:13px; color:#5b4630; }
+.wm3 { left:5px; top:28px;  width:248px; height:26px; font-size:17px; color:#5b4630; }
+
+/* 상단 버튼 */
+.tbtn {
+  border:none; font-family:inherit; font-size:21px; color:#2B2118;
+  cursor:pointer; background-repeat:no-repeat; background-size:100% 100%;
+  transition:transform .1s ease;
+}
+.tbtn:hover  { transform:scale(1.03); }
+.tbtn:active { transform:scale(.97); }
+.tbtn-org  { background-image:url('assets/btn.png'); }
+.tbtn-gray { background-image:url('assets/btn_gray.png'); }
+.tbtn-grn  { background-image:url('assets/btn_green.png'); }
+.bt-dice   { left:263px; top:7px; width:147px; height:36px; }
+.bt-swap   { left:420px; top:7px; width:220px; height:36px; }
+.bt-remake { left:658px; top:7px; width:179px; height:36px; }
+.bt-turn   { left:855px; top:7px; width:123px; height:36px; }
+
+.turn-lb { left:991px;  top:4px; width:135px; height:46px; font-size:27px; color:#3a2c1d;
+           justify-content:flex-end; }
+.turn-nm { left:1132px; top:4px; width:135px; height:46px; font-size:43px; color:#111; }
+
+/* 문제 카드 (흙구멍 + 흙패치) */
+.hole { width:112px; height:111px; z-index:1; }
+.card-btn {
+  width:130px; height:130px; border:none; background:transparent;
+  padding:0; cursor:pointer; z-index:2;
+  font-family:inherit; font-size:32px; color:#fff;
+  text-shadow:0 2px 3px rgba(0,0,0,.55);
+  background-repeat:no-repeat; background-size:100% 100%;
+  transition:transform .12s ease, opacity .35s ease;
+}
+.card-btn:hover:not(.dug) { transform:translateY(-4px) scale(1.03); }
+.card-btn.dug { opacity:0; pointer-events:none; }
+
+/* 모둠 점수판 */
+.turn-bg   { left:993px; width:267px; height:66px; background:#fff;
+             border:2px solid #111; border-radius:8px; z-index:1;
+             transition:background .2s ease; }
+.turn-bg.now { background:#40C291; }
+.round-bg  { left:876px; width:109px; height:43px; z-index:1; border-radius:6px;
+             border:2px solid #111; }
+.round-lb  { left:876px; width:109px; height:43px; z-index:2; font-size:12px; color:#3a2c1d;
+             flex-direction:column; justify-content:center; align-items:center; line-height:1.15; }
+.tm-chk {
+  left:999px; width:17px; height:17px; z-index:3; background:#F2F2F2;
+  border:1px solid #555; border-radius:3px; cursor:pointer; padding:0;
+  font-family:inherit; font-size:12px; color:#fff; line-height:1;
+}
+.tm-chk.on { background:#EB3D7B; border-color:#c02c60; }
+.tm-name  { left:1024px; width:75px; height:20px; z-index:3; font-size:15px; color:#111; }
+.tm-score { left:999px;  width:75px; height:34px; z-index:3; font-size:37px; color:#111;
+            justify-content:center; }
+.tm-btn {
+  z-index:3; border:1px solid #111; border-radius:4px; cursor:pointer; padding:0;
+  font-family:inherit; color:#fff; line-height:1;
+}
+.tm-plus  { left:1107px; width:39px; height:19px; background:#38BABA; font-size:15px; }
+.tm-minus { left:1146px; width:38px; height:19px; background:#F7859D; font-size:15px; }
+.tm-reset { left:1212px; width:38px; height:19px; background:#A3A3A3; font-size:9px; }
+.tm-icon  { width:25px; height:28px; z-index:3; cursor:pointer; transition:filter .15s, opacity .15s; }
+.tm-icon.off { filter:grayscale(1); opacity:.3; }
+
+/* 가림막 (턴 전환) */
+.cover     { left:0; top:54px; width:1280px; height:668px; z-index:40;
+             background:rgba(0,0,0,.72); cursor:pointer; display:none; }
+.cover.on  { display:block; }
+.cov-t1 { left:288px; top:280px; width:423px; height:39px; font-size:21px; color:#f3e6d0;
+          justify-content:center; }
+.cov-t2 { left:288px; top:341px; width:423px; height:42px; font-size:27px; color:#f3e6d0;
+          justify-content:center; }
+.cov-t3 { left:213px; top:373px; width:574px; height:97px; font-size:72px; color:#FFDE75;
+          justify-content:center; }
+
+/* 주사위 */
+.dice-ov   { left:0; top:0; width:1280px; height:720px; z-index:50;
+             background:rgba(0,0,0,.6); display:none; }
+.dice-ov.on { display:block; }
+.dice-img  { left:393px; top:206px; width:222px; height:222px; }
+.dice-close {
+  left:362px; top:477px; width:282px; height:59px; border:none; cursor:pointer;
+  background:url('assets/btn_close.png') no-repeat center/100% 100%;
+  font-family:inherit; font-size:32px; color:#2B2118;
+}
+
 /* 토스트 */
 .toast {
   position:absolute; left:50%; bottom:96px; transform:translate(-50%,10px);
@@ -273,6 +364,38 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
       <!-- 하단 버튼 -->
       <button class="at big-btn b-start"  id="btn-game-start">게임 시작하기</button>
       <button class="at big-btn b-resume" id="btn-game-resume">게임 이어서 시작하기</button>
+    </section>
+
+    <!-- ===================== 화면 3: 메인 보드 ===================== -->
+    <section class="scr" id="screen-board">
+      <div class="at tb wm1">YANGSONGI TEACHER’S</div>
+      <div class="at tb wm2">LUCKYTEM STUDIO</div>
+      <div class="at tb wm3">내용 확인 문제</div>
+
+      <button class="at tbtn tbtn-org  bt-dice"   id="bt-dice">주사위 던지기</button>
+      <button class="at tbtn tbtn-org  bt-swap"   id="bt-swap">선택 모둠 점수 바꾸기</button>
+      <button class="at tbtn tbtn-gray bt-remake" id="bt-remake">문제 다시 만들기</button>
+      <button class="at tbtn tbtn-grn  bt-turn"   id="bt-turn">턴 넘기기</button>
+
+      <div class="at tb turn-lb">현재 차례:</div>
+      <div class="at tb turn-nm" id="turn-now">1모둠</div>
+
+      <!-- 문제 카드 15개 · 모둠 점수판 8개 : 원본 좌표로 JS 생성 -->
+      <div id="card-layer"></div>
+      <div id="team-layer"></div>
+
+      <!-- 가림막 -->
+      <div class="at cover" id="cover">
+        <div class="at tb cov-t1">이곳을 클릭하여 다음 턴을 진행하세요!</div>
+        <div class="at tb cov-t2">다음 차례</div>
+        <div class="at tb cov-t3" id="cov-team">1 모둠</div>
+      </div>
+
+      <!-- 주사위 -->
+      <div class="at dice-ov" id="dice-ov">
+        <img class="at dice-img" id="dice-img" src="assets/dice1.png" alt="">
+        <button class="at dice-close" id="dice-close">닫기</button>
+      </div>
     </section>
 
     <div class="toast" id="toast"></div>
@@ -415,25 +538,256 @@ document.getElementById('v-order').onclick = function(){
   toast('플레이 순서를 ' + input + ' 로 변경했어요.');
 };
 
-/* ===== 화면 이동 ===== */
+/* ===== 화면 이동 (설정 화면 → 보드 이동은 보드 섹션에서 연결) ===== */
 document.getElementById('btn-start').onclick = function(){
   showScreen('screen-setup');
 };
 
+/* ============================================================
+   메인 보드 — 원본 slide10 + Module3/Module4 매크로 이식
+   ============================================================ */
+
+/* 카드 15개: 원본 (카드)1~15 의 좌표·배경·라벨을 그대로 사용.
+   번호와 자리가 어긋난 곳(6/7, 11/12)도 원본대로 유지한다. */
+var CARDS = [
+  { n:1,  x:58,  y:98,  img:80, label:'감사' },
+  { n:2,  x:220, y:98,  img:81, label:'배려' },
+  { n:3,  x:382, y:98,  img:82, label:'봉사' },
+  { n:4,  x:544, y:98,  img:83, label:'겸손' },
+  { n:5,  x:707, y:98,  img:84, label:'사랑' },
+  { n:7,  x:58,  y:243, img:86, label:'이해' },
+  { n:6,  x:220, y:243, img:85, label:'인내' },
+  { n:8,  x:382, y:243, img:87, label:'근면' },
+  { n:9,  x:544, y:243, img:88, label:'인정' },
+  { n:10, x:707, y:243, img:89, label:'자율' },
+  { n:12, x:58,  y:392, img:90, label:'친절' },
+  { n:11, x:220, y:392, img:81, label:'신뢰' },
+  { n:13, x:382, y:392, img:82, label:'열정' },
+  { n:14, x:544, y:392, img:83, label:'도움' },
+  { n:15, x:707, y:392, img:84, label:'예의' }
+];
+
+/* 모둠판 8개의 세로 기준선 (원본 (N모둠)모둠이름 y값) */
+var TEAM_Y = [66, 146, 225, 305, 384, 464, 545, 625];
+var ICON_X = [1079, 1109, 1138, 1167, 1197, 1226];
+var ICON_IMG = ['icon_star', 'icon_star', 'icon_star', 'icon_star', 'icon_x2', 'icon_arrow'];
+
+var board = {
+  teams: 6,          // 활성 모둠 수
+  order: [],         // 플레이 순서 (모둠 번호 배열)
+  currentIndex: 1,   // 원본 currentIndex (1-based)
+  scores: [],        // 모둠별 점수
+  selected: [],      // 점수 교환용 선택 상태
+  icons: [],         // 모둠별 아이콘 활성 상태
+  dug: {}            // 파낸 카드 번호
+};
+
+function buildBoardDom(){
+  /* 카드: 흙구멍(뒤) + 흙패치(앞) */
+  var cardHtml = '';
+  CARDS.forEach(function(c){
+    cardHtml +=
+      '<img class="at hole" src="assets/hole.png" alt="" ' +
+        'style="left:' + (c.x + 9) + 'px;top:' + (c.y + 9) + 'px">' +
+      '<button class="at card-btn tb ctr" data-card="' + c.n + '" ' +
+        'style="left:' + c.x + 'px;top:' + c.y + 'px;' +
+        'background-image:url(assets/card' + c.img + '.png)">' + c.label + '</button>';
+  });
+  document.getElementById('card-layer').innerHTML = cardHtml;
+
+  /* 모둠판 */
+  var teamHtml = '';
+  for (var t = 1; t <= 8; t++){
+    var y = TEAM_Y[t-1];
+    teamHtml +=
+      '<div class="at turn-bg"  data-turnbg="' + t + '" style="top:' + (y - 5) + 'px"></div>' +
+      '<img class="at round-bg" data-roundbg="' + t + '" src="assets/roundbg.png" alt="" ' +
+        'style="top:' + (y + 8) + 'px">' +
+      '<div class="at round-lb tb" data-round="' + t + '" style="top:' + (y + 8) + 'px">' +
+        '<span>라운드</span><span>획득 점수</span></div>' +
+      '<button class="at tm-chk" data-chk="' + t + '" style="top:' + (y + 1) + 'px"></button>' +
+      '<div class="at tb tm-name" data-name="' + t + '" style="top:' + y + 'px">' +
+        t + ' 모둠</div>' +
+      '<button class="at tm-btn tm-plus"  data-plus="'  + t + '" style="top:' + y + 'px">+</button>' +
+      '<button class="at tm-btn tm-minus" data-minus="' + t + '" style="top:' + y + 'px">−</button>' +
+      '<button class="at tm-btn tm-reset" data-reset="' + t + '" style="top:' + y + 'px">초기화</button>' +
+      '<div class="at tb tm-score" data-score="' + t + '" style="top:' + (y + 24) + 'px">0</div>';
+    for (var k = 0; k < 6; k++){
+      teamHtml +=
+        '<img class="at tm-icon" data-icon="' + t + '-' + k + '" ' +
+          'src="assets/' + ICON_IMG[k] + '.png" alt="" ' +
+          'style="left:' + ICON_X[k] + 'px;top:' + (y + 25) + 'px">';
+    }
+  }
+  document.getElementById('team-layer').innerHTML = teamHtml;
+}
+
+/* 설정한 모둠 수만큼만 점수판을 보인다 (원본 버튼_게임시작하기) */
+function applyTeamVisibility(){
+  for (var t = 1; t <= 8; t++){
+    var on = (t <= board.teams);
+    var sel = '[data-turnbg="'+t+'"],[data-chk="'+t+'"],[data-plus="'+t+'"],' +
+              '[data-minus="'+t+'"],[data-reset="'+t+'"],[data-score="'+t+'"],' +
+              '[data-roundbg="'+t+'"],[data-round="'+t+'"],[data-name="'+t+'"],' +
+              '[data-icon^="'+t+'-"]';
+    document.querySelectorAll(sel).forEach(function(el){
+      el.style.display = on ? '' : 'none';
+    });
+  }
+}
+
+function renderBoard(){
+  for (var t = 1; t <= 8; t++){
+    var s = document.querySelector('[data-score="'+t+'"]');
+    if (s) s.textContent = board.scores[t] || 0;
+    var c = document.querySelector('[data-chk="'+t+'"]');
+    if (c){
+      c.classList.toggle('on', !!board.selected[t]);
+      c.textContent = board.selected[t] ? 'V' : '';
+    }
+    for (var k = 0; k < 6; k++){
+      var ic = document.querySelector('[data-icon="'+t+'-'+k+'"]');
+      if (ic) ic.classList.toggle('off', board.icons[t] && board.icons[t][k] === false);
+    }
+  }
+  CARDS.forEach(function(c){
+    var el = document.querySelector('[data-card="'+c.n+'"]');
+    if (el) el.classList.toggle('dug', !!board.dug[c.n]);
+  });
+  applyTeamVisibility();
+}
+
+/* 현재 차례 모둠을 초록으로 강조 (원본 RGB(64,194,145)) */
+function highlightTurn(teamNo){
+  document.querySelectorAll('[data-turnbg]').forEach(function(el){
+    el.classList.toggle('now', +el.dataset.turnbg === teamNo);
+  });
+}
+
+/* 카드에 문제를 중복 없이 랜덤 배정 (원본 랜덤슬라이드이동_랜덤숫자생성) */
+function assignCards(){
+  var pool = [];
+  for (var i = 1; i <= CARDS.length; i++) pool.push(i);
+  for (var j = pool.length - 1; j > 0; j--){
+    var k = Math.floor(Math.random() * (j + 1));
+    var tmp = pool[j]; pool[j] = pool[k]; pool[k] = tmp;
+  }
+  CARDS.forEach(function(c, idx){ c.questionId = pool[idx]; });
+  board.dug = {};
+}
+
+function startBoard(){
+  board.teams = setup.teams;
+  board.order = setup.order.split('').map(Number);
+  board.currentIndex = 1;
+  board.scores = []; board.selected = []; board.icons = [];
+  for (var t = 1; t <= 8; t++){
+    board.scores[t] = 0;
+    board.selected[t] = false;
+    board.icons[t] = [true, true, true, true, true, true];
+  }
+  assignCards();
+  showScreen('screen-board');
+  renderBoard();
+  /* 첫 턴은 가림막에서 시작 */
+  document.getElementById('turn-now').textContent = board.order[0] + '모둠';
+  highlightTurn(board.order[0]);
+  document.getElementById('cov-team').textContent = board.order[0] + ' 모둠';
+  document.getElementById('cover').classList.add('on');
+}
+
+/* 턴 넘기기 — 원본 버튼_턴넘기기 로직을 그대로 옮김 */
+function nextTurn(){
+  var n = board.teams;
+  var main = document.getElementById('turn-now');
+  if (board.currentIndex <= n){
+    main.textContent = board.order[board.currentIndex - 1] + '모둠';
+    board.currentIndex++;
+    highlightTurn(board.order[board.currentIndex - 2]);
+    if (board.currentIndex === n + 1) board.currentIndex = 1;
+  } else {
+    main.textContent = '다음 라운드';
+    board.currentIndex = 1;
+  }
+  document.getElementById('cover').classList.remove('on');
+  document.getElementById('cov-team').textContent = board.order[board.currentIndex - 1] + ' 모둠';
+}
+
+/* ===== 이벤트 ===== */
+document.getElementById('card-layer').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-card]');
+  if (!btn || btn.classList.contains('dug')) return;
+  var no = +btn.dataset.card;
+  board.dug[no] = true;
+  btn.classList.add('dug');
+  var card = CARDS.filter(function(c){ return c.n === no; })[0];
+  toast('카드 ' + no + ' → 문제 ' + card.questionId + ' (문제 화면 준비 중)');
+});
+
+document.getElementById('team-layer').addEventListener('click', function(e){
+  var el = e.target;
+  var d = el.dataset || {};
+  if (d.plus)  { board.scores[+d.plus]  = (board.scores[+d.plus]  || 0) + 1; renderBoard(); return; }
+  if (d.minus) { board.scores[+d.minus] = (board.scores[+d.minus] || 0) - 1; renderBoard(); return; }
+  if (d.reset) { board.scores[+d.reset] = 0; renderBoard(); return; }
+  if (d.chk)   { var t = +d.chk; board.selected[t] = !board.selected[t]; renderBoard(); return; }
+  if (d.icon)  {
+    var p = d.icon.split('-'), ti = +p[0], ki = +p[1];
+    board.icons[ti][ki] = !board.icons[ti][ki];
+    renderBoard();
+  }
+});
+
+document.getElementById('cover').onclick   = nextTurn;
+document.getElementById('bt-turn').onclick = nextTurn;
+
+/* 선택 모둠 점수 바꾸기 — 원본은 2개 모둠을 선택해 점수를 서로 교환 */
+document.getElementById('bt-swap').onclick = function(){
+  var picked = [];
+  for (var t = 1; t <= board.teams; t++) if (board.selected[t]) picked.push(t);
+  if (picked.length === 0){ toast('V가 표시된 모둠이 없습니다.'); return; }
+  if (picked.length !== 2){ toast('2개 모둠을 선택해주세요!'); return; }
+  var a = picked[0], b = picked[1];
+  var tmp = board.scores[a]; board.scores[a] = board.scores[b]; board.scores[b] = tmp;
+  board.selected[a] = board.selected[b] = false;
+  renderBoard();
+  toast(a + '모둠 ↔ ' + b + '모둠 점수를 교환했어요.');
+};
+
+/* 문제 다시 만들기 — 원본은 확인 후 카드/문제를 다시 배치 */
+document.getElementById('bt-remake').onclick = function(){
+  if (!confirm('확인을 하면 문제카드가 다시 생성되고 문제와 보상 등이 다시 배치됩니다.\n계속 진행하시겠습니까?')) return;
+  assignCards();
+  renderBoard();
+  toast('문제카드를 다시 만들었어요.');
+};
+
+/* 주사위 던지기 — 원본 버튼_주사위랜덤던지기 */
+document.getElementById('bt-dice').onclick = function(){
+  var n = Math.floor(Math.random() * 6) + 1;
+  document.getElementById('dice-img').src = 'assets/dice' + n + '.png';
+  document.getElementById('dice-ov').classList.add('on');
+};
+document.getElementById('dice-close').onclick = function(){
+  document.getElementById('dice-ov').classList.remove('on');
+};
+
+/* 설정 화면 → 보드 */
 document.getElementById('btn-game-start').onclick = function(){
-  /* 원본: 지정/랜덤 중 하나가 선택되지 않으면 시작하지 않음 */
   if (setup.mode !== 'fixed' && setup.mode !== 'random'){
     toast('지정 순서 또는 랜덤 순서 중 하나를 선택해주세요.');
     return;
   }
   saveSetup();
-  toast('게임 시작 — ' + setup.teams + '모둠, 순서 ' + setup.order + ' (보드 화면 준비 중)');
+  startBoard();
 };
-
 document.getElementById('btn-game-resume').onclick = function(){
-  toast('이어서 시작 — 저장된 설정: ' + setup.teams + '모둠 (보드 화면 준비 중)');
+  saveSetup();
+  startBoard();
+  toast('저장된 설정으로 이어서 시작합니다 — ' + setup.teams + '모둠');
 };
 
+buildBoardDom();
 loadSetup();
 renderSetup();
 </script>
