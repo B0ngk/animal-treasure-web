@@ -318,6 +318,41 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
 .b-right { left:813px; top:612px; width:379px;  height:71px;
            background-image:url('assets/btn.png'); }
 
+/* ============================================================
+   화면 6·7·8 — 보물찾기 결과(slide50~69) · 보물상자 선택(slide19)
+                · 아이템 획득(slide20~48)
+   ============================================================ */
+/* 네 화면 공통: 모서리 동물 친구들 (layout11~15) */
+.corner-a { left:1077px; top:404px; width:163px; height:191px; }
+.corner-b { left:1148px; top:534px; width:122px; height:191px; }
+.corner-c { left:1026px; top:534px; width:153px; height:191px; }
+.corner-d { left:67px;   top:425px; width:147px; height:191px; }
+.corner-e { left:19px;   top:534px; width:131px; height:191px; }
+.corner-f { left:132px;  top:533px; width:132px; height:191px; }
+
+.tr-soil { width:266px; height:50px; z-index:2; }
+.tr-gem  { z-index:1; }
+
+.chest-guide { left:100px; top:42px;  width:1080px; height:48px;
+               font-size:32px; color:#3a2c1d; justify-content:center; }
+.item-guide  { left:100px; top:506px; width:1080px; height:48px;
+               font-size:32px; color:#3a2c1d; justify-content:center; }
+
+.chest-btn {
+  width:205px; height:206px; border:none; background:transparent; padding:0;
+  cursor:pointer; z-index:3; transition:transform .12s ease;
+}
+.chest-btn img { width:100%; height:100%; }
+.chest-btn:hover { transform:translateY(-6px) scale(1.04); }
+.chest-still { width:205px; height:206px; z-index:2; }
+.chest-open  { width:266px; height:319px; z-index:3; }
+.item-pop    { width:102px; height:150px; z-index:4; }
+
+.b-pick  { left:469px; top:608px; width:341px; height:71px;
+           background-image:url('assets/btn_close.png'); }
+.b-chest { left:469px; top:608px; width:341px; height:71px;
+           background-image:url('assets/btn_chest.png'); }
+
 /* 토스트 */
 .toast {
   position:absolute; left:50%; bottom:96px; transform:translate(-50%,10px);
@@ -465,6 +500,45 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
       <button class="at q-btn b-wrong" id="b-wrong">오답</button>
       <button class="at q-btn b-back"  id="b-back">문제 보기</button>
       <button class="at q-btn b-right" id="b-right">정답</button>
+    </section>
+
+    <!-- ===================== 화면 6: 보물찾기 결과 ===================== -->
+    <section class="scr" id="screen-treasure">
+      <div id="tr-layer"></div>
+      <img class="at corner-d" src="assets/animal_c.png" alt="">
+      <img class="at corner-e" src="assets/bear.png" alt="">
+      <img class="at corner-f" src="assets/animal_d.png" alt="">
+      <img class="at corner-a" src="assets/animal_a.png" alt="">
+      <img class="at corner-c" src="assets/animal_b.png" alt="">
+      <img class="at corner-b" src="assets/rabbit.png" alt="">
+      <button class="at q-btn b-pick"  id="b-tr-pick">문제 선택</button>
+      <button class="at q-btn b-chest" id="b-tr-chest">보물 상자 확인</button>
+    </section>
+
+    <!-- ===================== 화면 7: 보물상자 선택 ===================== -->
+    <section class="scr" id="screen-chest">
+      <div class="at tb chest-guide">아래 보물 상자를 클릭하여 아이템을 획득하세요!</div>
+      <div id="chest-layer"></div>
+      <img class="at corner-d" src="assets/animal_c.png" alt="">
+      <img class="at corner-e" src="assets/bear.png" alt="">
+      <img class="at corner-f" src="assets/animal_d.png" alt="">
+      <img class="at corner-a" src="assets/animal_a.png" alt="">
+      <img class="at corner-c" src="assets/animal_b.png" alt="">
+      <img class="at corner-b" src="assets/rabbit.png" alt="">
+    </section>
+
+    <!-- ===================== 화면 8: 아이템 획득 ===================== -->
+    <section class="scr" id="screen-item">
+      <div class="at tb chest-guide">아래 보물 상자를 클릭하여 아이템을 획득하세요!</div>
+      <div id="item-layer"></div>
+      <div class="at tb item-guide" id="item-name"></div>
+      <img class="at corner-d" src="assets/animal_c.png" alt="">
+      <img class="at corner-e" src="assets/bear.png" alt="">
+      <img class="at corner-f" src="assets/animal_d.png" alt="">
+      <img class="at corner-a" src="assets/animal_a.png" alt="">
+      <img class="at corner-c" src="assets/animal_b.png" alt="">
+      <img class="at corner-b" src="assets/rabbit.png" alt="">
+      <button class="at q-btn b-pick" id="b-item-pick">문제 선택</button>
     </section>
 
     <div class="toast" id="toast"></div>
@@ -757,6 +831,7 @@ function startBoard(){
     board.icons[t] = [true, true, true, true, true, true];
   }
   assignCards();
+  resetItemQueues();
   showScreen('screen-board');
   renderBoard();
   /* 첫 턴은 가림막에서 시작 */
@@ -836,20 +911,170 @@ function openQuestion(cardNo){
   showScreen('screen-question');
 }
 
-/* 정답/오답 판정 후 보드로 복귀 — 정답이면 현재 차례 모둠에 점수 */
-function judge(correct){
-  if (correct){
-    var team = board.currentTeam;
-    var pt = (CONTENT.settings && CONTENT.settings.pointsPerCorrect) || 1;
-    board.scores[team] = (board.scores[team] || 0) + pt;
+/* ============================================================
+   보상 — 원본 slide50~69(보물찾기 결과) / slide19(보물상자) /
+          slide20~48(아이템 획득)
+   ============================================================ */
+
+/* 원본 20개 결과 슬라이드의 구덩이 구성.
+   g 는 구덩이 5칸의 내용: R,r=빨간 보석(1점) B=뼈다귀(0점)
+   G=초록 보석(3점) C=보물상자(아이템). 각 슬라이드의 (설정)획득점수와
+   보석 합계가 정확히 일치하는 것을 확인했다. */
+var TREASURE = [
+  { p:1, g:'RBBBB', chest:false }, { p:1, g:'BBrBB', chest:false },
+  { p:2, g:'BBRrB', chest:false }, { p:3, g:'BrRRB', chest:false },
+  { p:3, g:'BrRrB', chest:false }, { p:3, g:'RRrBB', chest:false },
+  { p:4, g:'RrBRr', chest:false }, { p:4, g:'RrRrB', chest:false },
+  { p:6, g:'RGRrB', chest:false }, { p:6, g:'RGRRB', chest:false },
+  { p:5, g:'RrRRr', chest:false }, { p:7, g:'RrRGr', chest:false },
+  { p:1, g:'RBBCB', chest:true  }, { p:2, g:'RBRCB', chest:true  },
+  { p:3, g:'BrCRr', chest:true  }, { p:3, g:'RrBrC', chest:true  },
+  { p:4, g:'RRRrC', chest:true  }, { p:6, g:'CGBGB', chest:true  },
+  { p:0, g:'CBBBB', chest:true  }, { p:0, g:'BBBBC', chest:true  }
+];
+
+/* 구덩이 5칸의 흙더미 위치 (원본 고정값) */
+var PITS = [[214,326],[513,326],[821,326],[363,512],[671,512]];
+
+/* 보석별 이미지·크기·흙더미 기준 오프셋 (원본 측정값) */
+var GEMS = {
+  R: { img:'gem_R',     w:156, h:223, dy:-231 },
+  r: { img:'gem_r',     w:156, h:223, dy:-231 },
+  B: { img:'gem_bone',  w:156, h:187, dy:-213 },
+  G: { img:'gem_G',     w:156, h:223, dy:-232 },
+  C: { img:'gem_chest', w:193, h:194, dy:-215 }
+};
+
+/* 아이템 9칸 — 원본 slide20~28 구성 그대로 (보석 교환 2칸, 황금별 3칸) */
+var ITEMS = [
+  { name:'더블 포인트', label:'더블 아이템 획득',    img:'item_double' },
+  { name:'프리 패스',   label:'프리 패스 아이템 획득', img:'item_free' },
+  { name:'보석 교환',   label:'보석 교환 아이템 획득', img:'item_swap' },
+  { name:'보석 교환',   label:'보석 교환 아이템 획득', img:'item_swap' },
+  { name:'스틸',        label:'스틸 아이템 획득',     img:'item_steal' },
+  { name:'폭탄',        label:'폭탄 아이템 획득',     img:'item_bomb' },
+  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star' },
+  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star' },
+  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star' }
+];
+
+/* 보물상자 3칸 위치 (원본 slide19) */
+var CHEST_SLOTS = [[273,272],[536,272],[803,273]];
+
+/* 상자마다 독립된 셔플 순서를 돌린다 (원본 Item1C/2C/3C) */
+var itemQueues = [[], [], []];
+
+function shuffleIndexes(n){
+  var a = [];
+  for (var i = 0; i < n; i++) a.push(i);
+  for (var j = n - 1; j > 0; j--){
+    var k = Math.floor(Math.random() * (j + 1));
+    var t = a[j]; a[j] = a[k]; a[k] = t;
+  }
+  return a;
+}
+
+function resetItemQueues(){
+  itemQueues = [shuffleIndexes(ITEMS.length),
+                shuffleIndexes(ITEMS.length),
+                shuffleIndexes(ITEMS.length)];
+}
+
+function nextItem(chestNo){
+  var q = itemQueues[chestNo - 1];
+  if (!q || !q.length) q = itemQueues[chestNo - 1] = shuffleIndexes(ITEMS.length);
+  return ITEMS[q.shift()];
+}
+
+var currentTreasure = null;
+
+function showTreasure(){
+  currentTreasure = TREASURE[Math.floor(Math.random() * TREASURE.length)];
+  var html = '';
+  currentTreasure.g.split('').forEach(function(code, i){
+    var gem = GEMS[code], pit = PITS[i];
+    var cx = pit[0] + 133;                      /* 흙더미 중심 */
+    html +=
+      '<img class="at tr-gem" src="assets/' + gem.img + '.png" alt="" style="left:' +
+        (cx - gem.w / 2) + 'px;top:' + (pit[1] + gem.dy) + 'px;' +
+        'width:' + gem.w + 'px;height:' + gem.h + 'px">' +
+      '<img class="at tr-soil" src="assets/soil.png" alt="" style="left:' +
+        pit[0] + 'px;top:' + pit[1] + 'px">';
+  });
+  document.getElementById('tr-layer').innerHTML = html;
+  document.getElementById('b-tr-pick').style.display  = currentTreasure.chest ? 'none' : '';
+  document.getElementById('b-tr-chest').style.display = currentTreasure.chest ? '' : 'none';
+  showScreen('screen-treasure');
+}
+
+/* 원본 버튼_자동점수반영: 결과 화면을 나갈 때 획득 점수를 반영 */
+function applyTreasureScore(){
+  if (!currentTreasure) return;
+  var team = board.currentTeam;
+  if (currentTreasure.p > 0){
+    board.scores[team] = (board.scores[team] || 0) + currentTreasure.p;
     renderBoard();
-    toast('정답! ' + team + '모둠 +' + pt + '점');
+    toast(team + '모둠 +' + currentTreasure.p + '점');
+  } else {
+    toast('아쉽게도 획득한 점수가 없어요.');
+  }
+}
+
+function showChestPick(){
+  var html = '';
+  CHEST_SLOTS.forEach(function(s, i){
+    html += '<button class="at chest-btn" data-chest="' + (i + 1) + '" style="left:' +
+              s[0] + 'px;top:' + s[1] + 'px">' +
+              '<img src="assets/chest_closed.png" alt=""></button>';
+  });
+  document.getElementById('chest-layer').innerHTML = html;
+  showScreen('screen-chest');
+}
+
+function showItem(chestNo){
+  var item = nextItem(chestNo);
+  var slot = CHEST_SLOTS[chestNo - 1];
+  var html =
+    '<img class="at chest-open" src="assets/chest_open.png" alt="" style="left:' +
+      (slot[0] - 30) + 'px;top:' + (slot[1] - 112) + 'px">' +
+    '<img class="at item-pop" src="assets/' + item.img + '.png" alt="" style="left:' +
+      (slot[0] + 52) + 'px;top:' + (slot[1] - 112) + 'px">';
+  CHEST_SLOTS.forEach(function(s, i){
+    if (i + 1 === chestNo) return;
+    html += '<img class="at chest-still" src="assets/chest_closed.png" alt="" style="left:' +
+              s[0] + 'px;top:' + s[1] + 'px">';
+  });
+  document.getElementById('item-layer').innerHTML = html;
+  document.getElementById('item-name').textContent = item.label;
+  showScreen('screen-item');
+}
+
+/* 정답이면 보물찾기 결과로, 오답이면 보드로 */
+function judge(correct){
+  currentCard = null;
+  if (correct){
+    showTreasure();
   } else {
     toast('오답 — 점수 변동 없음');
+    showScreen('screen-board');
   }
-  currentCard = null;
-  showScreen('screen-board');
 }
+
+document.getElementById('b-tr-pick').onclick = function(){
+  applyTreasureScore();
+  showScreen('screen-board');
+};
+document.getElementById('b-tr-chest').onclick = function(){
+  applyTreasureScore();
+  showChestPick();
+};
+document.getElementById('chest-layer').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-chest]');
+  if (btn) showItem(+btn.dataset.chest);
+});
+document.getElementById('b-item-pick').onclick = function(){
+  showScreen('screen-board');
+};
 
 document.getElementById('b-check').onclick = function(){ showScreen('screen-answer'); };
 document.getElementById('b-back').onclick  = function(){ showScreen('screen-question'); };
