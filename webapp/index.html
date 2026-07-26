@@ -269,6 +269,55 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
   font-family:inherit; font-size:32px; color:#2B2118;
 }
 
+/* ============================================================
+   화면 4·5 — 문제 (slide71/layout9) · 정답 및 해설 (slide72/layout10)
+   ============================================================ */
+.q-wm  { left:88px; top:36px; width:344px; height:36px; font-size:22px; color:#5b4630; }
+
+/* 상단 배너 */
+.q-band {
+  left:457px; width:366px; height:63px; border-radius:12px;
+  justify-content:center; font-size:43px; color:#fff;
+}
+.q-band-q { top:32px; background:#77400E; }
+.q-band-a { top:33px; background:#FF5050; }
+
+/* 본문 */
+.q-text {
+  left:120px; top:182px; width:1039px; height:223px;
+  font-size:59px; color:#2b1d0e; line-height:1.35;
+  justify-content:center; text-align:center;
+}
+.q-text.with-img { left:504px; top:197px; width:650px; font-size:44px; text-align:left; }
+.q-img { left:133px; top:170px; width:347px; height:275px; object-fit:contain; }
+
+.a-text {
+  left:120px; top:218px; width:1040px; height:195px;
+  font-size:115px; color:#2b1d0e; justify-content:center;
+}
+.a-desc {
+  left:152px; top:393px; width:976px; height:87px;
+  font-size:32px; color:#4a3a28; line-height:1.4;
+  justify-content:center; text-align:center;
+}
+
+/* 하단 버튼 */
+.q-btn {
+  border:none; font-family:inherit; font-size:43px; color:#2B2118;
+  cursor:pointer; background-repeat:no-repeat; background-size:100% 100%;
+  transition:transform .1s ease;
+}
+.q-btn:hover  { transform:scale(1.02); }
+.q-btn:active { transform:scale(.98); }
+.b-check { left:83px;  top:612px; width:1113px; height:71px;
+           background-image:url('assets/btn_wide.png'); }
+.b-wrong { left:88px;  top:612px; width:379px;  height:71px;
+           background-image:url('assets/btn_close.png'); }
+.b-back  { left:530px; top:612px; width:219px;  height:71px;
+           background-image:url('assets/btn_mid.png'); }
+.b-right { left:813px; top:612px; width:379px;  height:71px;
+           background-image:url('assets/btn.png'); }
+
 /* 토스트 */
 .toast {
   position:absolute; left:50%; bottom:96px; transform:translate(-50%,10px);
@@ -396,6 +445,26 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
         <img class="at dice-img" id="dice-img" src="assets/dice1.png" alt="">
         <button class="at dice-close" id="dice-close">닫기</button>
       </div>
+    </section>
+
+    <!-- ===================== 화면 4: 문제 ===================== -->
+    <section class="scr" id="screen-question">
+      <div class="at tb q-wm">내용 확인 문제</div>
+      <div class="at tb q-band q-band-q">문제</div>
+      <img class="at q-img" id="q-img" src="" alt="" style="display:none">
+      <div class="at tb q-text" id="q-text"></div>
+      <button class="at q-btn b-check" id="b-check">정답 확인</button>
+    </section>
+
+    <!-- ===================== 화면 5: 정답 및 해설 ===================== -->
+    <section class="scr" id="screen-answer">
+      <div class="at tb q-wm">내용 확인 문제</div>
+      <div class="at tb q-band q-band-a">정답 및 해설</div>
+      <div class="at tb a-text" id="a-text"></div>
+      <div class="at tb a-desc" id="a-desc"></div>
+      <button class="at q-btn b-wrong" id="b-wrong">오답</button>
+      <button class="at q-btn b-back"  id="b-back">문제 보기</button>
+      <button class="at q-btn b-right" id="b-right">정답</button>
     </section>
 
     <div class="toast" id="toast"></div>
@@ -659,6 +728,7 @@ function renderBoard(){
 
 /* 현재 차례 모둠을 초록으로 강조 (원본 RGB(64,194,145)) */
 function highlightTurn(teamNo){
+  board.currentTeam = teamNo;
   document.querySelectorAll('[data-turnbg]').forEach(function(el){
     el.classList.toggle('now', +el.dataset.turnbg === teamNo);
   });
@@ -713,6 +783,79 @@ function nextTurn(){
   document.getElementById('cov-team').textContent = board.order[board.currentIndex - 1] + ' 모둠';
 }
 
+/* ============================================================
+   문제은행 — 원본 슬라이드 70~ 에서 뽑아낸 questions.json
+   과목·학기가 바뀌면 이 파일만 교체하면 된다.
+   ============================================================ */
+var CONTENT = { meta:{}, settings:{ cardCount:15, pointsPerCorrect:1 }, questions:[] };
+
+var ContentSource = {
+  load: function(){
+    return fetch('questions.json', { cache:'no-store' })
+      .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(d){
+        if (!d || !Array.isArray(d.questions) || !d.questions.length) throw new Error('형식 오류');
+        CONTENT = d;
+        if (!CONTENT.settings) CONTENT.settings = { cardCount:15, pointsPerCorrect:1 };
+        return d;
+      })
+      .catch(function(err){
+        toast('⚠️ 문제 데이터를 불러오지 못했어요 (' + err.message + '). 로컬 서버로 열어주세요.');
+      });
+  }
+};
+
+function questionOf(cardNo){
+  var card = CARDS.filter(function(c){ return c.n === cardNo; })[0];
+  if (!card) return null;
+  var qs = CONTENT.questions;
+  if (!qs.length) return null;
+  /* 문제 수가 카드 수보다 적으면 순환시켜 사용한다 (원본도 중복을 허용) */
+  return qs[(card.questionId - 1) % qs.length];
+}
+
+var currentCard = null;
+
+function openQuestion(cardNo){
+  var q = questionOf(cardNo);
+  if (!q){ toast('문제 데이터가 없습니다.'); return; }
+  currentCard = cardNo;
+
+  var txt = document.getElementById('q-text');
+  var img = document.getElementById('q-img');
+  txt.textContent = q.question;
+  if (q.image){
+    img.src = q.image; img.style.display = '';
+    txt.classList.add('with-img');
+  } else {
+    img.style.display = 'none';
+    txt.classList.remove('with-img');
+  }
+  document.getElementById('a-text').textContent = q.answer;
+  document.getElementById('a-desc').textContent = q.explanation || '';
+  showScreen('screen-question');
+}
+
+/* 정답/오답 판정 후 보드로 복귀 — 정답이면 현재 차례 모둠에 점수 */
+function judge(correct){
+  if (correct){
+    var team = board.currentTeam;
+    var pt = (CONTENT.settings && CONTENT.settings.pointsPerCorrect) || 1;
+    board.scores[team] = (board.scores[team] || 0) + pt;
+    renderBoard();
+    toast('정답! ' + team + '모둠 +' + pt + '점');
+  } else {
+    toast('오답 — 점수 변동 없음');
+  }
+  currentCard = null;
+  showScreen('screen-board');
+}
+
+document.getElementById('b-check').onclick = function(){ showScreen('screen-answer'); };
+document.getElementById('b-back').onclick  = function(){ showScreen('screen-question'); };
+document.getElementById('b-right').onclick = function(){ judge(true); };
+document.getElementById('b-wrong').onclick = function(){ judge(false); };
+
 /* ===== 이벤트 ===== */
 document.getElementById('card-layer').addEventListener('click', function(e){
   var btn = e.target.closest('[data-card]');
@@ -720,8 +863,7 @@ document.getElementById('card-layer').addEventListener('click', function(e){
   var no = +btn.dataset.card;
   board.dug[no] = true;
   btn.classList.add('dug');
-  var card = CARDS.filter(function(c){ return c.n === no; })[0];
-  toast('카드 ' + no + ' → 문제 ' + card.questionId + ' (문제 화면 준비 중)');
+  openQuestion(no);
 });
 
 document.getElementById('team-layer').addEventListener('click', function(e){
@@ -790,6 +932,7 @@ document.getElementById('btn-game-resume').onclick = function(){
 buildBoardDom();
 loadSetup();
 renderSetup();
+ContentSource.load();
 </script>
 </body>
 </html>

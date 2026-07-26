@@ -24,8 +24,8 @@ cd webapp && python3 -m http.server 8000
 | 타이틀 (내용 확인 문제) | slide4 | ✅ 완료 |
 | 설정 및 조작법 | slide9 | ✅ 완료 |
 | 메인 보드 (문제카드 + 모둠 점수판) | slide10 | ✅ 완료 |
-| 보물상자 → 문제 선택 | slide2~3 | ⬜ 예정 |
-| 문제 / 정답·해설 | slide50~ | ⬜ 예정 |
+| 보물상자 → 아이템/점수 획득 | slide19~68 | ⬜ 예정 |
+| 문제 / 정답·해설 | slide70~ | ✅ 완료 |
 | 아이템 · 턴 · 주사위 · 결과 | — | ⬜ 예정 |
 
 설계와 계획은 `docs/` 에 있습니다.
@@ -69,7 +69,11 @@ _vba_all.txt         원본 VBA 매크로 전문 (포팅 참조용)
 
 ```
 docs/slide-coordinates.json   # 슬라이드 114개 전체의 좌표·색상·폰트
+webapp/questions.json         # 문제은행 15문항 (문제·정답·해설)
 ```
+
+과목·학기가 바뀌면 `webapp/questions.json` 만 교체하면 됩니다.
+원본에서 다시 뽑으려면 `python3 tools/dump_questions.py` 를 실행하세요.
 
 원본 파일이 있는 PC에서는 아래처럼 다시 추출할 수도 있습니다.
 
