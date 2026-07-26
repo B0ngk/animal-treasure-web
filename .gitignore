@@ -1,2 +1,14 @@
+# 브레인스토밍 세션 임시 파일
 .superpowers/
 .DS_Store
+
+# PPT 추출 작업 폴더 (원본 .pptm에서 언제든 재추출 가능)
+_media/
+_slides/
+
+# Office 임시 잠금 파일
+~$*.pptm
+
+# 개발 중 스크래치
+assets_test/_contact_sheet*.png
+assets_test/pose_test_02.png

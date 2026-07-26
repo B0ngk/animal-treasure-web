@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>동물 친구 보물 찾기 — 내용 확인 문제</title>
+<style>
+/* ===== 폰트: 강원교육튼튼 (원본 PPT와 동일) ===== */
+@font-face {
+  font-family: 'GangwonEduTunTun';
+  src: url('assets/GangwonEduTunTun.otf') format('opentype');
+  font-weight: normal; font-style: normal;
+  font-display: block;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; background:#5c4835; }
+
+/* 원본 슬라이드와 동일한 1280x720 무대. 좌표는 PPT에서 추출한 실측값(EMU/9525). */
+.stage-wrap { position:fixed; inset:0; overflow:hidden; }
+.stage {
+  position:absolute; left:50%; top:50%; width:1280px; height:720px;
+  transform-origin:center center;
+  background:url('assets/bg.png') no-repeat center/cover;   /* 원본 배경 image12 */
+  overflow:hidden;
+  font-family:'GangwonEduTunTun','Noto Sans KR',sans-serif;
+  box-shadow:0 10px 40px rgba(0,0,0,.45);
+}
+
+/* 모든 요소는 원본 좌표를 그대로 사용 */
+.at { position:absolute; }
+
+/* ---------- 상단 브랜드 (특템공방 x i-Scream S) ---------- */
+.teacher   { left:431px; top:22px;  width:37px;  height:37px; border-radius:50%; }
+.brandname {
+  left:474px; top:23px; width:120px; height:36px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:29px; color:#3A2C1D; letter-spacing:-1px; white-space:nowrap;
+}
+.xmark {
+  left:593px; top:10px; width:38px; height:55px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Noto Sans KR',sans-serif; font-size:26px; font-weight:700; color:#3A2C1D;
+}
+.iscream { left:634px; top:17px; width:215px; height:43px; }
+
+/* ---------- 좌상단 리본 (image20) + 학년/과목 ---------- */
+.ribbon    { left:84px; top:-1px; width:242px; height:277px; }
+.ribbon-tx {
+  left:78px; top:48px; width:242px; height:145px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  color:#fff; line-height:1.05; text-shadow:0 2px 3px rgba(0,0,0,.28);
+}
+.ribbon-tx .g1 { font-size:32px; }
+.ribbon-tx .g2 { font-size:80px; margin-top:2px; }
+
+/* ---------- 단원 알약 (원본: fill #FFDE75 / border #442508 4.5pt / 가운데정렬) ---------- */
+.unit {
+  left:347px; top:76px; width:585px; height:60px;
+  background:#FFDE75; border:6px solid #442508; border-radius:30px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:43px; color:#442508; line-height:1;
+}
+
+/* ---------- 제목 ---------- */
+.sub  { left:364px; top:147px; width:626px; height:52px;
+        display:flex; align-items:center; font-size:43px; color:#442508; }
+.main { left:360px; top:190px; width:626px; height:87px;
+        display:flex; align-items:center; font-size:72px; color:#442508; letter-spacing:1px; }
+
+/* 큰 노란 타이틀: 노란 글자 + 갈색 외곽선 (stroke를 fill 뒤로) */
+.big {
+  left:78px; top:319px; width:724px; height:152px;
+  display:flex; align-items:center;
+  font-size:117px; color:#FFDE75; letter-spacing:2px; line-height:1;
+  -webkit-text-stroke:11px #6E4526;
+  paint-order:stroke fill;
+  filter:drop-shadow(5px 7px 0 rgba(72,45,20,.30));
+}
+
+/* ---------- 보석 (image18) : 원본 회전값 반영 ---------- */
+.gem-a { left:1126px; top:128px; width:102px; height:145px; transform:rotate(21deg); }
+.gem-b { left:1029px; top:155px; width:120px; height:171px; transform:rotate(-13deg); }
+.gem-c { left:819px;  top:530px; width:98px;  height:140px; transform:rotate(-30deg); z-index:4; }
+
+/* ---------- 흙더미 (image17) ---------- */
+.soil-a { left:816px; top:604px; width:333px; height:88px; z-index:3; }
+.soil-b { left:964px; top:619px; width:316px; height:73px; z-index:3; }
+
+/* ---------- 캐릭터 ---------- */
+.bear   { left:875px;  top:336px; width:216px; height:315px; z-index:2; }
+.rabbit { left:1047px; top:327px; width:205px; height:322px; z-index:2; }
+
+/* ---------- 교과서 페이지 ---------- */
+.book { left:78px; top:611px; width:415px; height:68px;
+        display:flex; align-items:center; font-size:48px; color:#7D503C; }
+
+/* ---------- START 버튼 (image13) ---------- */
+.start {
+  left:499px; top:610px; width:282px; height:71px;
+  border:none; background:url('assets/btn.png') no-repeat center/100% 100%;
+  font-family:inherit; font-size:43px; color:#2B2118; letter-spacing:2px;
+  cursor:pointer; transition:transform .12s ease; z-index:5;
+}
+.start:hover  { transform:scale(1.04); }
+.start:active { transform:scale(.97); }
+</style>
+</head>
+<body>
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+
+    <!-- 상단 브랜드 -->
+    <img class="at teacher" src="assets/teacher.png" alt="">
+    <div class="at brandname">특템공방</div>
+    <div class="at xmark">x</div>
+    <img class="at iscream" src="assets/logo_iscream.png" alt="i-Scream S">
+
+    <!-- 리본 + 학년/과목 -->
+    <img class="at ribbon" src="assets/ribbon.png" alt="">
+    <div class="at ribbon-tx">
+      <span class="g1">5학년 2학기</span>
+      <span class="g2">과학</span>
+    </div>
+
+    <!-- 단원 -->
+    <div class="at unit">3. 열과 우리 생활</div>
+
+    <!-- 제목 -->
+    <div class="at sub">양송이샘의</div>
+    <div class="at main">동물 친구 보물 찾기</div>
+    <div class="at big">내용 확인 문제</div>
+
+    <!-- 보석 (뒤쪽 2개) -->
+    <img class="at gem-a" src="assets/gem.png" alt="">
+    <img class="at gem-b" src="assets/gem.png" alt="">
+
+    <!-- 캐릭터 -->
+    <img class="at bear"   src="assets/bear.png"   alt="곰">
+    <img class="at rabbit" src="assets/rabbit.png" alt="토끼">
+
+    <!-- 흙더미 (캐릭터 앞) -->
+    <img class="at soil-a" src="assets/soil.png" alt="">
+    <img class="at soil-b" src="assets/soil.png" alt="">
+
+    <!-- 보석 (앞쪽) -->
+    <img class="at gem-c" src="assets/gem.png" alt="">
+
+    <!-- 교과서 -->
+    <div class="at book">교과서 80-83쪽</div>
+
+    <!-- START -->
+    <button class="at start" id="startBtn">START</button>
+
+  </div>
+</div>
+
+<script>
+// 무대를 화면에 맞춰 균등 스케일 (16:9 비율 유지)
+function fit(){
+  var s=document.getElementById('stage');
+  var k=Math.min(innerWidth/1280, innerHeight/720);
+  s.style.transform='translate(-50%,-50%) scale('+k+')';
+}
+addEventListener('resize',fit); fit();
+
+document.getElementById('startBtn').addEventListener('click',function(){
+  console.log('START clicked — 다음 화면(설정) 준비 중');
+});
+</script>
+</body>
+</html>
