@@ -23,11 +23,27 @@ EMBED = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}em
 EMU = 9525.0  # 1 px
 
 ROOT = Path(__file__).resolve().parent.parent
-PPTM = next(ROOT.glob('*.pptm'))
 WORK = ROOT / '_slides'
+
+# 원본 .pptm 은 상용 배포물이라 저장소에 포함하지 않는다.
+# .pptm 이 없는 PC에서는 docs/slide-coordinates.json 에 이미 추출해 둔
+# 좌표를 사용한다.
+# '~$' 로 시작하는 파일은 Office 가 만드는 임시 잠금 파일이라 제외한다.
+_found = sorted(p for p in ROOT.glob('*.pptm') if not p.name.startswith('~$'))
+PPTM = _found[0] if _found else None
+
+
+def require_pptm():
+    if PPTM is None:
+        sys.exit(
+            '원본 .pptm 을 찾을 수 없습니다 (저장소에 포함되지 않음).\n'
+            '이미 추출해 둔 좌표를 쓰려면: docs/slide-coordinates.json\n'
+            f'원본으로 다시 추출하려면 .pptm 을 {ROOT} 에 두고 실행하세요.'
+        )
 
 
 def unpack(*members):
+    require_pptm()
     WORK.mkdir(exist_ok=True)
     subprocess.run(['unzip', '-o', '-q', str(PPTM), *members, '-d', str(WORK)],
                    check=False)
