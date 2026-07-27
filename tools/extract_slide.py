@@ -106,8 +106,12 @@ def shapes(xml_path):
             fill = el.find('./p:spPr//a:solidFill/a:srgbClr', NS)
             latin = el.find('.//a:latin', NS)
 
+            # 숨겨진 도형은 화면에 나오지 않는다. OX 문제의 정답 표시처럼
+            # 정답 정보를 담고 있는 경우가 있어 함께 기록한다.
+            hidden = nv.get('hidden') == '1' if nv is not None else False
+
             out.append(dict(
-                kind=kind, name=name, img=img,
+                kind=kind, name=name, img=img, hidden=hidden,
                 x=round(ax / EMU), y=round(ay / EMU),
                 w=round(w * sx / EMU), h=round(h * sy / EMU),
                 rot=rot, text=text, size=size,

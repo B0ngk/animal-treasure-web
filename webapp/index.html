@@ -26,7 +26,15 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
   overflow:hidden;
   font-family:'GangwonEduTunTun','Noto Sans KR',sans-serif;
   box-shadow:0 10px 40px rgba(0,0,0,.45);
+  /* 한글은 어절 단위로 줄바꿈한다. 이게 없으면 '직접'이 '직/접'으로 쪼개진다. */
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  line-break:strict;
 }
+
+/* 이미지를 배경으로 쓰는 버튼은 배경색을 반드시 지워야 한다.
+   버튼의 기본 배경색이 PNG 의 투명 여백으로 비쳐 흰 테두리처럼 보인다. */
+button { background-color:transparent; }
 
 .at  { position:absolute; }                 /* 절대 배치 공통 */
 .scr { display:none; position:absolute; inset:0; }
@@ -87,7 +95,8 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
    화면 2 — 설정 및 조작법 (slide9)
    ============================================================ */
 .sign    { left:406px; top:0;   width:468px; height:86px; }
-.sign-tx { left:457px; top:26px; width:356px; height:61px;
+/* 나무 간판은 위쪽이 사슬이라 판자 부분(약 43% 아래)의 세로 중앙에 맞춘다 */
+.sign-tx { left:406px; top:37px; width:468px; height:49px;
            justify-content:center; font-size:43px; color:#111; }
 
 /* 흰 패널 + 사선 그림자 (원본: 뒤 도형에 사선 패턴) */
@@ -191,6 +200,7 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
   border:none; font-family:inherit; font-size:21px; color:#2B2118;
   cursor:pointer; background-repeat:no-repeat; background-size:100% 100%;
   transition:transform .1s ease;
+  display:flex; align-items:center; justify-content:center;
 }
 .tbtn:hover  { transform:scale(1.03); }
 .tbtn:active { transform:scale(.97); }
@@ -286,18 +296,44 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
 .q-band-a { top:33px; background:#FF5050; }
 
 /* 본문 */
+/* 위치·크기는 유형별로 JS(Q_BOX)에서 지정한다 */
 .q-text {
-  left:120px; top:182px; width:1039px; height:223px;
-  font-size:59px; color:#2b1d0e; line-height:1.35;
+  color:#2b1d0e; line-height:1.35;
   justify-content:center; text-align:center;
 }
-.q-text.with-img { left:504px; top:197px; width:650px; font-size:44px; text-align:left; }
 .q-img { left:133px; top:170px; width:347px; height:275px; object-fit:contain; }
 
 .a-text {
   left:120px; top:218px; width:1040px; height:195px;
   font-size:115px; color:#2b1d0e; justify-content:center;
 }
+/* 정답이 길면 한 줄에 안 들어가므로 글자를 줄인다 */
+.a-text.long { font-size:72px; }
+
+/* O/X 문항 — 원본은 도형으로 그려져 있어 CSS 로 같은 모양을 만든다 */
+.ox-mark { border-radius:50%; }
+.ox-o {
+  width:167px; height:167px; border:26px solid #0B76A0; border-radius:50%;
+  background:transparent; box-sizing:border-box;
+}
+.ox-x { width:161px; height:161px; position:absolute; }
+.ox-x::before, .ox-x::after {
+  content:''; position:absolute; left:50%; top:0; width:26px; height:100%;
+  margin-left:-13px; background:#EB3D7B; border-radius:4px;
+}
+.ox-x::before { transform:rotate(45deg); }
+.ox-x::after  { transform:rotate(-45deg); }
+.q-ox-o { left:398px; top:328px; }
+.q-ox-x { left:716px; top:330px; }
+.a-ox-o { left:557px; top:193px; }
+.a-ox-x { left:559px; top:199px; }
+
+/* 4지선다 보기 */
+.ch-badge {
+  width:95px; height:53px; background:#77400E; border-radius:12px;
+  color:#fff; font-size:32px; justify-content:center;
+}
+.ch-text { width:300px; height:68px; font-size:48px; color:#2b1d0e; }
 .a-desc {
   left:152px; top:393px; width:976px; height:87px;
   font-size:32px; color:#4a3a28; line-height:1.4;
@@ -309,6 +345,7 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
   border:none; font-family:inherit; font-size:43px; color:#2B2118;
   cursor:pointer; background-repeat:no-repeat; background-size:100% 100%;
   transition:transform .1s ease;
+  display:flex; align-items:center; justify-content:center;
 }
 .q-btn:hover  { transform:scale(1.02); }
 .q-btn:active { transform:scale(.98); }
@@ -334,7 +371,15 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
 .corner-f { left:132px;  top:533px; width:132px; height:191px; }
 
 .tr-soil { width:266px; height:50px; z-index:2; }
-.tr-gem  { z-index:1; }
+/* 보석은 땅속에 묻혀 있다가 클릭하면 흙더미 위로 올라온다.
+   흙더미(z-index 2)보다 뒤에 두어야 솟아오르는 것처럼 보인다. */
+.tr-gem  { z-index:1; transform:translateY(var(--buried)); opacity:0;
+           transition:transform .55s cubic-bezier(.22,1.2,.4,1), opacity .2s; }
+.tr-gem.up { transform:translateY(0); opacity:1; }
+.tr-hint { left:340px; top:596px; width:600px; height:40px; z-index:5;
+           font-size:24px; color:#5b4630; justify-content:center;
+           animation:hintPulse 1.4s infinite; }
+@keyframes hintPulse { 0%,100%{opacity:.55} 50%{opacity:1} }
 
 .chest-guide { left:100px; top:42px;  width:1080px; height:48px;
                font-size:32px; color:#3a2c1d; justify-content:center; }
@@ -519,6 +564,7 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
       <div class="at tb q-band q-band-q">문제</div>
       <img class="at q-img" id="q-img" src="" alt="" style="display:none">
       <div class="at tb q-text" id="q-text"></div>
+      <div id="q-extra"></div>
       <button class="at q-btn b-check" id="b-check">정답 확인</button>
     </section>
 
@@ -527,6 +573,7 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
       <div class="at tb q-wm">내용 확인 문제</div>
       <div class="at tb q-band q-band-a">정답 및 해설</div>
       <div class="at tb a-text" id="a-text"></div>
+      <div id="a-extra"></div>
       <div class="at tb a-desc" id="a-desc"></div>
       <button class="at q-btn b-wrong" id="b-wrong">오답</button>
       <button class="at q-btn b-back"  id="b-back">문제 보기</button>
@@ -536,6 +583,7 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
     <!-- ===================== 화면 6: 보물찾기 결과 ===================== -->
     <section class="scr" id="screen-treasure">
       <div id="tr-layer"></div>
+      <div class="at tb tr-hint" id="tr-hint">화면을 클릭해 땅을 파 보세요!</div>
       <img class="at corner-d" src="assets/animal_c.png" alt="">
       <img class="at corner-e" src="assets/bear.png" alt="">
       <img class="at corner-f" src="assets/animal_d.png" alt="">
@@ -938,6 +986,27 @@ function questionOf(cardNo){
 
 var currentCard = null;
 
+/* 4지선다 보기 자리 (원본 slide107 기준 2x2 배치) */
+var CHOICE_SLOTS = [[279, 292], [279, 371], [716, 292], [716, 371]];
+
+/* 문제 본문 영역은 유형마다 다르다 (원본 각 슬라이드의 텍스트 상자 크기) */
+var Q_BOX = {
+  short:  { x:120, y:182, w:1039, h:223, size:59 },
+  image:  { x:504, y:197, w:650,  h:223, size:44 },
+  ox:     { x:121, y:181, w:1039, h:81,  size:52 },
+  blank:  { x:121, y:211, w:1039, h:223, size:52 },
+  choice: { x:152, y:120, w:976,  h:152, size:48 }
+};
+
+function applyQBox(el, key){
+  var b = Q_BOX[key] || Q_BOX.short;
+  el.style.left = b.x + 'px';
+  el.style.top = b.y + 'px';
+  el.style.width = b.w + 'px';
+  el.style.height = b.h + 'px';
+  el.style.fontSize = b.size + 'px';
+}
+
 function openQuestion(cardNo){
   var q = questionOf(cardNo);
   if (!q){ toast('문제 데이터가 없습니다.'); return; }
@@ -946,15 +1015,50 @@ function openQuestion(cardNo){
   var txt = document.getElementById('q-text');
   var img = document.getElementById('q-img');
   txt.textContent = q.question;
+
   if (q.image){
     img.src = q.image; img.style.display = '';
-    txt.classList.add('with-img');
+    applyQBox(txt, 'image');
   } else {
     img.style.display = 'none';
-    txt.classList.remove('with-img');
+    applyQBox(txt, q.type);
   }
-  document.getElementById('a-text').textContent = q.answer;
+
+  /* 유형별 추가 요소 — O/X 표시, 4지선다 보기 */
+  var extra = '';
+  if (q.type === 'ox'){
+    extra = '<div class="at ox-o q-ox-o"></div><div class="at ox-x q-ox-x"></div>';
+  } else if (q.type === 'choice'){
+    (q.choices || []).forEach(function(c, i){
+      var s = CHOICE_SLOTS[i];
+      extra +=
+        '<div class="at tb ch-badge" style="left:' + s[0] + 'px;top:' + s[1] + 'px">' +
+          (i + 1) + '</div>' +
+        '<div class="at tb ch-text" style="left:' + (s[0] + 101) + 'px;top:' +
+          (s[1] - 4) + 'px">' + c + '</div>';
+    });
+  }
+  document.getElementById('q-extra').innerHTML = extra;
+
+  /* 정답 화면 */
+  var aText = document.getElementById('a-text');
+  var aExtra = '';
+  if (q.type === 'ox'){
+    aText.textContent = '';
+    aExtra = q.answer === 'O'
+      ? '<div class="at ox-o a-ox-o"></div>'
+      : '<div class="at ox-x a-ox-x"></div>';
+  } else if (q.type === 'choice'){
+    var idx = parseInt(q.answer, 10);
+    var label = (q.choices && q.choices[idx - 1]) ? q.choices[idx - 1] : '';
+    aText.textContent = q.answer + '번' + (label ? '  ' + label : '');
+  } else {
+    aText.textContent = q.answer;
+  }
+  aText.classList.toggle('long', aText.textContent.length > 8);
+  document.getElementById('a-extra').innerHTML = aExtra;
   document.getElementById('a-desc').textContent = q.explanation || '';
+
   showScreen('screen-question');
 }
 
@@ -1166,18 +1270,46 @@ function showTreasure(){
   currentTreasure.g.split('').forEach(function(code, i){
     var gem = GEMS[code], pit = PITS[i];
     var cx = pit[0] + 133;                      /* 흙더미 중심 */
+    /* 땅속에 숨겨 두는 거리 — 보석이 흙더미 아래로 완전히 내려가도록 */
+    var buried = (pit[1] - (pit[1] + gem.dy)) + 30;
     html +=
       '<img class="at tr-gem" src="assets/' + gem.img + '.png" alt="" style="left:' +
         (cx - gem.w / 2) + 'px;top:' + (pit[1] + gem.dy) + 'px;' +
-        'width:' + gem.w + 'px;height:' + gem.h + 'px">' +
+        'width:' + gem.w + 'px;height:' + gem.h + 'px;' +
+        '--buried:' + buried + 'px">' +
       '<img class="at tr-soil" src="assets/soil.png" alt="" style="left:' +
         pit[0] + 'px;top:' + pit[1] + 'px">';
   });
   document.getElementById('tr-layer').innerHTML = html;
-  document.getElementById('b-tr-pick').style.display  = currentTreasure.chest ? 'none' : '';
-  document.getElementById('b-tr-chest').style.display = currentTreasure.chest ? '' : 'none';
+  /* 파내기 전에는 버튼을 감춘다 */
+  document.getElementById('b-tr-pick').style.display  = 'none';
+  document.getElementById('b-tr-chest').style.display = 'none';
+  document.getElementById('tr-hint').style.display = '';
+  treasureRevealed = false;
   showScreen('screen-treasure');
 }
+
+var treasureRevealed = false;
+
+/* 클릭하면 보석이 땅속에서 차례로 올라온다 */
+function revealTreasure(){
+  if (treasureRevealed) return;
+  treasureRevealed = true;
+  document.getElementById('tr-hint').style.display = 'none';
+  var gems = document.querySelectorAll('#tr-layer .tr-gem');
+  gems.forEach(function(g, i){
+    setTimeout(function(){ g.classList.add('up'); }, i * 130);
+  });
+  setTimeout(function(){
+    document.getElementById('b-tr-pick').style.display  = currentTreasure.chest ? 'none' : '';
+    document.getElementById('b-tr-chest').style.display = currentTreasure.chest ? '' : 'none';
+  }, gems.length * 130 + 250);
+}
+
+document.getElementById('screen-treasure').addEventListener('click', function(e){
+  if (e.target.closest('.q-btn')) return;      /* 버튼 클릭은 제외 */
+  revealTreasure();
+});
 
 /* 원본 버튼_자동점수반영: 결과 화면을 나갈 때 획득 점수를 반영.
    더블포인트를 켜 두었다면 보석 수를 2배로 준다 (원본 slide8). */
