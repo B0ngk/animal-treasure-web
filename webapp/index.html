@@ -246,6 +246,9 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
 .tm-reset { left:1212px; width:38px; height:19px; background:#A3A3A3; font-size:9px; }
 .tm-icon  { width:25px; height:28px; z-index:3; cursor:pointer; transition:filter .15s, opacity .15s; }
 .tm-icon.off { filter:grayscale(1); opacity:.3; }
+/* 더블포인트를 켜 둔 상태 */
+.tm-icon.ready { filter:drop-shadow(0 0 4px #FFC000); animation:readyPulse 1s infinite; }
+@keyframes readyPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
 
 /* 가림막 (턴 전환) */
 .cover     { left:0; top:54px; width:1280px; height:668px; z-index:40;
@@ -352,6 +355,34 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
            background-image:url('assets/btn_close.png'); }
 .b-chest { left:469px; top:608px; width:341px; height:71px;
            background-image:url('assets/btn_chest.png'); }
+
+/* ============================================================
+   아이템 효과 — 대상 모둠 선택 오버레이
+   ============================================================ */
+.pick-ov { left:0; top:0; width:1280px; height:720px; z-index:60;
+           background:rgba(0,0,0,.68); display:none; }
+.pick-ov.on { display:block; }
+.pick-box {
+  left:290px; top:210px; width:700px; height:300px;
+  background:#fff; border:5px solid #111; border-radius:20px; z-index:61;
+}
+.pick-title { left:290px; top:240px; width:700px; height:50px; z-index:62;
+              font-size:34px; color:#111; justify-content:center; }
+.pick-desc  { left:290px; top:288px; width:700px; height:36px; z-index:62;
+              font-size:21px; color:#666; justify-content:center; }
+.pick-teams { left:320px; top:340px; width:640px; height:140px; z-index:62;
+              display:flex; flex-wrap:wrap; gap:12px; align-content:flex-start;
+              justify-content:center; }
+.pick-team {
+  width:96px; height:56px; border:3px solid #111; border-radius:10px;
+  background:#FFDE75; font-family:inherit; font-size:24px; color:#111; cursor:pointer;
+}
+.pick-team:hover { background:#FFC000; }
+.pick-cancel {
+  left:565px; top:452px; width:150px; height:44px; z-index:62;
+  border:3px solid #111; border-radius:10px; background:#D9D9D9;
+  font-family:inherit; font-size:21px; cursor:pointer;
+}
 
 /* 토스트 */
 .toast {
@@ -540,6 +571,15 @@ html, body { height:100%; overflow:hidden; background:#5c4835; }
       <img class="at corner-b" src="assets/rabbit.png" alt="">
       <button class="at q-btn b-pick" id="b-item-pick">문제 선택</button>
     </section>
+
+    <!-- 대상 모둠 선택 (즉시 사용 아이템) -->
+    <div class="at pick-ov" id="pick-ov">
+      <div class="at pick-box"></div>
+      <div class="at tb pick-title" id="pick-title"></div>
+      <div class="at tb pick-desc"  id="pick-desc"></div>
+      <div class="at pick-teams" id="pick-teams"></div>
+      <button class="at pick-cancel" id="pick-cancel">나중에</button>
+    </div>
 
     <div class="toast" id="toast"></div>
   </div>
@@ -788,9 +828,14 @@ function renderBoard(){
       c.classList.toggle('on', !!board.selected[t]);
       c.textContent = board.selected[t] ? 'V' : '';
     }
+    /* 아이콘 6칸 = 아이템 보관함 (황금별 4 + 더블포인트 + 프리패스) */
+    var inv = board.inv[t] || { star:0, double:false, free:false };
     for (var k = 0; k < 6; k++){
       var ic = document.querySelector('[data-icon="'+t+'-'+k+'"]');
-      if (ic) ic.classList.toggle('off', board.icons[t] && board.icons[t][k] === false);
+      if (!ic) continue;
+      var have = (k <= 3) ? (inv.star > k) : (k === 4 ? inv.double : inv.free);
+      ic.classList.toggle('off', !have);
+      ic.classList.toggle('ready', k === 4 && board.pendingDouble === t);
     }
   }
   CARDS.forEach(function(c){
@@ -824,11 +869,13 @@ function startBoard(){
   board.teams = setup.teams;
   board.order = setup.order.split('').map(Number);
   board.currentIndex = 1;
-  board.scores = []; board.selected = []; board.icons = [];
+  board.scores = []; board.selected = []; board.inv = [];
+  board.pendingDouble = null;
   for (var t = 1; t <= 8; t++){
     board.scores[t] = 0;
     board.selected[t] = false;
-    board.icons[t] = [true, true, true, true, true, true];
+    /* 기본 제공 아이템: 더블포인트·프리패스 (원본 slide8) */
+    board.inv[t] = { star:0, double:true, free:true };
   }
   assignCards();
   resetItemQueues();
@@ -945,18 +992,143 @@ var GEMS = {
   C: { img:'gem_chest', w:193, h:194, dy:-215 }
 };
 
-/* 아이템 9칸 — 원본 slide20~28 구성 그대로 (보석 교환 2칸, 황금별 3칸) */
+/* 아이템 9칸 — 원본 slide20~28 구성 그대로 (보석 교환 2칸, 황금별 3칸).
+   kind 는 slide8「게임 아이템 설명」의 분류:
+     keep  보관했다가 쓰는 아이템 (모둠판 아이콘으로 들어감)
+     now   획득 즉시 발동하는 아이템 */
 var ITEMS = [
-  { name:'더블 포인트', label:'더블 아이템 획득',    img:'item_double' },
-  { name:'프리 패스',   label:'프리 패스 아이템 획득', img:'item_free' },
-  { name:'보석 교환',   label:'보석 교환 아이템 획득', img:'item_swap' },
-  { name:'보석 교환',   label:'보석 교환 아이템 획득', img:'item_swap' },
-  { name:'스틸',        label:'스틸 아이템 획득',     img:'item_steal' },
-  { name:'폭탄',        label:'폭탄 아이템 획득',     img:'item_bomb' },
-  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star' },
-  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star' },
-  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star' }
+  { name:'더블 포인트', label:'더블 아이템 획득',    img:'item_double', kind:'keep', slot:'double' },
+  { name:'프리 패스',   label:'프리 패스 아이템 획득', img:'item_free',   kind:'keep', slot:'free' },
+  { name:'보석 교환',   label:'보석 교환 아이템 획득', img:'item_swap',   kind:'now',  effect:'swap' },
+  { name:'보석 교환',   label:'보석 교환 아이템 획득', img:'item_swap',   kind:'now',  effect:'swap' },
+  { name:'스틸',        label:'스틸 아이템 획득',     img:'item_steal',  kind:'now',  effect:'steal' },
+  { name:'폭탄',        label:'폭탄 아이템 획득',     img:'item_bomb',   kind:'now',  effect:'bomb' },
+  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star',   kind:'keep', slot:'star' },
+  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star',   kind:'keep', slot:'star' },
+  { name:'황금별',      label:'황금별 아이템 획득',    img:'item_star',   kind:'keep', slot:'star' }
 ];
+
+/* 황금별 정산표 — 원본 slide8 (1개 5, 2개 12, 3개 20, 4개 30) */
+var STAR_BONUS = [0, 5, 12, 20, 30];
+
+/* 주사위를 굴려 오버레이로 보여준다 (원본 버튼_주사위랜덤던지기와 같은 연출) */
+function rollDice(){
+  var n = Math.floor(Math.random() * 6) + 1;
+  document.getElementById('dice-img').src = 'assets/dice' + n + '.png';
+  document.getElementById('dice-ov').classList.add('on');
+  return n;
+}
+
+/* ===== 대상 모둠 선택 오버레이 ===== */
+var pickResolve = null;
+
+function pickTeam(title, desc, exclude){
+  document.getElementById('pick-title').textContent = title;
+  document.getElementById('pick-desc').textContent = desc;
+  var html = '';
+  for (var t = 1; t <= board.teams; t++){
+    if (t === exclude) continue;
+    html += '<button class="pick-team" data-pick="' + t + '">' + t + '모둠</button>';
+  }
+  document.getElementById('pick-teams').innerHTML = html;
+  document.getElementById('pick-ov').classList.add('on');
+  return new Promise(function(resolve){ pickResolve = resolve; });
+}
+
+function closePick(value){
+  document.getElementById('pick-ov').classList.remove('on');
+  var r = pickResolve; pickResolve = null;
+  if (r) r(value);
+}
+
+document.getElementById('pick-teams').addEventListener('click', function(e){
+  var b = e.target.closest('[data-pick]');
+  if (b) closePick(+b.dataset.pick);
+});
+document.getElementById('pick-cancel').onclick = function(){ closePick(null); };
+
+/* ===== 아이템 획득 · 사용 ===== */
+
+/* 보관 아이템은 모둠판 아이콘으로 들어간다 (황금별 4칸 + 더블포인트 + 프리패스) */
+function grantItem(item, team){
+  var inv = board.inv[team];
+  if (item.slot === 'star'){
+    if (inv.star >= 4){ toast('황금별은 4개까지만 보관할 수 있어요.'); return; }
+    inv.star++;
+    toast(team + '모둠 황금별 ' + inv.star + '개');
+  } else if (item.slot === 'double'){
+    inv.double = true;
+    toast(team + '모둠 더블포인트 획득 — 땅을 파기 전에 사용하세요.');
+  } else if (item.slot === 'free'){
+    inv.free = true;
+    toast(team + '모둠 프리패스 획득 — 정답 공개 전에 사용하세요.');
+  }
+  renderBoard();
+}
+
+/* 즉시 사용 아이템 — 원본 slide8 설명 그대로 */
+function applyNowItem(effect, team){
+  if (effect === 'swap'){
+    pickTeam('보석 교환', '지목한 팀과 점수를 맞교환합니다. (무조건 교환)', team)
+      .then(function(target){
+        if (!target) { toast('교환할 팀을 고르지 않아 넘어갑니다.'); return; }
+        var tmp = board.scores[team];
+        board.scores[team] = board.scores[target];
+        board.scores[target] = tmp;
+        renderBoard();
+        toast(team + '모둠 ↔ ' + target + '모둠 점수를 교환했어요.');
+      });
+    return;
+  }
+  if (effect === 'steal'){
+    pickTeam('보석 스틸', '주사위를 굴려 나온 수만큼 지목한 팀의 점수를 가져옵니다.', team)
+      .then(function(target){
+        if (!target) { toast('대상 팀을 고르지 않아 넘어갑니다.'); return; }
+        var n = rollDice();
+        var got = Math.min(n, Math.max(0, board.scores[target]));
+        board.scores[target] -= got;
+        board.scores[team] = (board.scores[team] || 0) + got;
+        renderBoard();
+        toast('주사위 ' + n + ' → ' + target + '모둠에서 ' + got + '점을 가져왔어요.');
+      });
+    return;
+  }
+  if (effect === 'bomb'){
+    var n = rollDice();
+    if (n % 2 === 1){
+      for (var t = 1; t <= board.teams; t++) board.scores[t] = 0;
+      toast('주사위 ' + n + ' (홀수) — 모든 모둠의 점수가 0이 되었어요!');
+    } else {
+      board.scores[team] = 0;
+      toast('주사위 ' + n + ' (짝수) — ' + team + '모둠만 0점이 되었어요.');
+    }
+    renderBoard();
+  }
+}
+
+/* 보관 아이템 사용 (모둠판 아이콘 클릭) */
+function useKeptItem(team, slotIndex){
+  var inv = board.inv[team];
+  if (slotIndex <= 3){                    /* 황금별 4칸 */
+    toast('황금별은 게임이 끝났을 때 점수로 바뀝니다. (현재 ' + inv.star + '개)');
+    return;
+  }
+  if (slotIndex === 4){                   /* 더블포인트 */
+    if (!inv.double){ toast(team + '모둠은 더블포인트가 없어요.'); return; }
+    if (board.pendingDouble === team){
+      board.pendingDouble = null;
+      toast('더블포인트 사용을 취소했어요.');
+    } else {
+      board.pendingDouble = team;
+      toast(team + '모둠 더블포인트 준비 — 이번에 파는 땅의 보석이 2배가 됩니다.');
+    }
+    renderBoard();
+    return;
+  }
+  /* 프리패스는 오답일 때 안내에 따라 사용한다 */
+  if (!inv.free){ toast(team + '모둠은 프리패스가 없어요.'); return; }
+  toast('프리패스는 오답일 때 사용할 수 있어요.');
+}
 
 /* 보물상자 3칸 위치 (원본 slide19) */
 var CHEST_SLOTS = [[273,272],[536,272],[803,273]];
@@ -1007,17 +1179,30 @@ function showTreasure(){
   showScreen('screen-treasure');
 }
 
-/* 원본 버튼_자동점수반영: 결과 화면을 나갈 때 획득 점수를 반영 */
+/* 원본 버튼_자동점수반영: 결과 화면을 나갈 때 획득 점수를 반영.
+   더블포인트를 켜 두었다면 보석 수를 2배로 준다 (원본 slide8). */
 function applyTreasureScore(){
   if (!currentTreasure) return;
   var team = board.currentTeam;
-  if (currentTreasure.p > 0){
-    board.scores[team] = (board.scores[team] || 0) + currentTreasure.p;
+  var pts = currentTreasure.p;
+  var doubled = false;
+
+  if (board.pendingDouble === team && pts > 0){
+    pts *= 2;
+    doubled = true;
+    board.inv[team].double = false;      /* 아이템 소모 */
+    board.pendingDouble = null;
+  }
+
+  if (pts > 0){
+    board.scores[team] = (board.scores[team] || 0) + pts;
     renderBoard();
-    toast(team + '모둠 +' + currentTreasure.p + '점');
+    toast(team + '모둠 +' + pts + '점' + (doubled ? ' (더블포인트 2배!)' : ''));
   } else {
+    renderBoard();
     toast('아쉽게도 획득한 점수가 없어요.');
   }
+  currentTreasure.scored = true;
 }
 
 function showChestPick(){
@@ -1031,8 +1216,11 @@ function showChestPick(){
   showScreen('screen-chest');
 }
 
+var currentItem = null;
+
 function showItem(chestNo){
   var item = nextItem(chestNo);
+  currentItem = item;
   var slot = CHEST_SLOTS[chestNo - 1];
   var html =
     '<img class="at chest-open" src="assets/chest_open.png" alt="" style="left:' +
@@ -1049,15 +1237,24 @@ function showItem(chestNo){
   showScreen('screen-item');
 }
 
-/* 정답이면 보물찾기 결과로, 오답이면 보드로 */
+/* 정답이면 보물찾기 결과로. 오답이면 프리패스가 있는 모둠에 한해
+   "정답이 틀리더라도 땅을 파 볼 수 있음" (원본 slide8) 을 제안한다. */
 function judge(correct){
   currentCard = null;
-  if (correct){
-    showTreasure();
-  } else {
-    toast('오답 — 점수 변동 없음');
-    showScreen('screen-board');
+  if (correct){ showTreasure(); return; }
+
+  var team = board.currentTeam;
+  if (board.inv[team] && board.inv[team].free){
+    if (confirm('오답입니다.\n' + team + '모둠의 프리패스를 사용해 땅을 파 볼까요?')){
+      board.inv[team].free = false;
+      renderBoard();
+      toast(team + '모둠 프리패스 사용');
+      showTreasure();
+      return;
+    }
   }
+  toast('오답 — 점수 변동 없음');
+  showScreen('screen-board');
 }
 
 document.getElementById('b-tr-pick').onclick = function(){
@@ -1072,8 +1269,15 @@ document.getElementById('chest-layer').addEventListener('click', function(e){
   var btn = e.target.closest('[data-chest]');
   if (btn) showItem(+btn.dataset.chest);
 });
+/* 아이템 화면을 나갈 때 효과를 적용한다.
+   보관 아이템은 모둠판으로, 즉시 사용 아이템은 바로 발동. */
 document.getElementById('b-item-pick').onclick = function(){
   showScreen('screen-board');
+  if (!currentItem) return;
+  var item = currentItem, team = board.currentTeam;
+  currentItem = null;
+  if (item.kind === 'keep') grantItem(item, team);
+  else applyNowItem(item.effect, team);
 };
 
 document.getElementById('b-check').onclick = function(){ showScreen('screen-answer'); };
@@ -1099,9 +1303,8 @@ document.getElementById('team-layer').addEventListener('click', function(e){
   if (d.reset) { board.scores[+d.reset] = 0; renderBoard(); return; }
   if (d.chk)   { var t = +d.chk; board.selected[t] = !board.selected[t]; renderBoard(); return; }
   if (d.icon)  {
-    var p = d.icon.split('-'), ti = +p[0], ki = +p[1];
-    board.icons[ti][ki] = !board.icons[ti][ki];
-    renderBoard();
+    var p = d.icon.split('-');
+    useKeptItem(+p[0], +p[1]);
   }
 });
 
