@@ -329,8 +329,9 @@ button { background-color:transparent; }
 .a-ox-x { left:559px; top:199px; }
 
 /* 4지선다 보기 */
+/* 원본 배지는 tx1(검정) 배경 + bg1(흰) 글자 */
 .ch-badge {
-  width:95px; height:53px; background:#77400E; border-radius:12px;
+  width:95px; height:53px; background:#111; border-radius:12px;
   color:#fff; font-size:32px; justify-content:center;
 }
 .ch-text { width:300px; height:68px; font-size:48px; color:#2b1d0e; }
@@ -370,10 +371,14 @@ button { background-color:transparent; }
 .corner-e { left:19px;   top:534px; width:131px; height:191px; }
 .corner-f { left:132px;  top:533px; width:132px; height:191px; }
 
-.tr-soil { width:266px; height:50px; z-index:2; }
-/* 보석은 땅속에 묻혀 있다가 클릭하면 흙더미 위로 올라온다.
-   흙더미(z-index 2)보다 뒤에 두어야 솟아오르는 것처럼 보인다. */
-.tr-gem  { z-index:1; transform:translateY(var(--buried)); opacity:0;
+/* 흙더미를 하나씩 클릭해 파낸다 */
+.tr-soil { width:266px; height:50px; z-index:2; cursor:pointer;
+           transition:transform .12s ease; }
+.tr-soil.done { cursor:default; }
+.tr-soil:not(.done):hover { transform:translateY(-3px); }
+/* 보석·뼈다귀는 흙더미보다 위에 그려 가려지지 않게 한다 */
+.tr-gem  { z-index:3; transform:translateY(var(--buried)); opacity:0;
+           pointer-events:none;
            transition:transform .55s cubic-bezier(.22,1.2,.4,1), opacity .2s; }
 .tr-gem.up { transform:translateY(0); opacity:1; }
 .tr-hint { left:340px; top:596px; width:600px; height:40px; z-index:5;
@@ -583,7 +588,7 @@ button { background-color:transparent; }
     <!-- ===================== 화면 6: 보물찾기 결과 ===================== -->
     <section class="scr" id="screen-treasure">
       <div id="tr-layer"></div>
-      <div class="at tb tr-hint" id="tr-hint">화면을 클릭해 땅을 파 보세요!</div>
+      <div class="at tb tr-hint" id="tr-hint">흙더미를 하나씩 클릭해 땅을 파 보세요!</div>
       <img class="at corner-d" src="assets/animal_c.png" alt="">
       <img class="at corner-e" src="assets/bear.png" alt="">
       <img class="at corner-f" src="assets/animal_d.png" alt="">
@@ -1273,12 +1278,12 @@ function showTreasure(){
     /* 땅속에 숨겨 두는 거리 — 보석이 흙더미 아래로 완전히 내려가도록 */
     var buried = (pit[1] - (pit[1] + gem.dy)) + 30;
     html +=
-      '<img class="at tr-gem" src="assets/' + gem.img + '.png" alt="" style="left:' +
-        (cx - gem.w / 2) + 'px;top:' + (pit[1] + gem.dy) + 'px;' +
-        'width:' + gem.w + 'px;height:' + gem.h + 'px;' +
+      '<img class="at tr-gem" data-gem="' + i + '" src="assets/' + gem.img +
+        '.png" alt="" style="left:' + (cx - gem.w / 2) + 'px;top:' +
+        (pit[1] + gem.dy) + 'px;width:' + gem.w + 'px;height:' + gem.h + 'px;' +
         '--buried:' + buried + 'px">' +
-      '<img class="at tr-soil" src="assets/soil.png" alt="" style="left:' +
-        pit[0] + 'px;top:' + pit[1] + 'px">';
+      '<img class="at tr-soil" data-pit="' + i + '" src="assets/soil.png" alt="" ' +
+        'style="left:' + pit[0] + 'px;top:' + pit[1] + 'px">';
   });
   document.getElementById('tr-layer').innerHTML = html;
   /* 파내기 전에는 버튼을 감춘다 */
@@ -1291,24 +1296,31 @@ function showTreasure(){
 
 var treasureRevealed = false;
 
-/* 클릭하면 보석이 땅속에서 차례로 올라온다 */
-function revealTreasure(){
-  if (treasureRevealed) return;
-  treasureRevealed = true;
-  document.getElementById('tr-hint').style.display = 'none';
+/* 흙더미를 하나 클릭하면 그 자리의 것만 올라온다 */
+function digPit(index){
+  var gem = document.querySelector('#tr-layer [data-gem="' + index + '"]');
+  var soil = document.querySelector('#tr-layer [data-pit="' + index + '"]');
+  if (!gem || gem.classList.contains('up')) return;
+  gem.classList.add('up');
+  if (soil) soil.classList.add('done');
+
   var gems = document.querySelectorAll('#tr-layer .tr-gem');
-  gems.forEach(function(g, i){
-    setTimeout(function(){ g.classList.add('up'); }, i * 130);
-  });
-  setTimeout(function(){
-    document.getElementById('b-tr-pick').style.display  = currentTreasure.chest ? 'none' : '';
-    document.getElementById('b-tr-chest').style.display = currentTreasure.chest ? '' : 'none';
-  }, gems.length * 130 + 250);
+  var done = document.querySelectorAll('#tr-layer .tr-gem.up').length;
+  document.getElementById('tr-hint').style.display = done ? 'none' : '';
+
+  if (done === gems.length){                   /* 다 파내면 버튼을 연다 */
+    treasureRevealed = true;
+    setTimeout(function(){
+      document.getElementById('b-tr-pick').style.display  = currentTreasure.chest ? 'none' : '';
+      document.getElementById('b-tr-chest').style.display = currentTreasure.chest ? '' : 'none';
+    }, 450);
+  }
 }
 
-document.getElementById('screen-treasure').addEventListener('click', function(e){
-  if (e.target.closest('.q-btn')) return;      /* 버튼 클릭은 제외 */
-  revealTreasure();
+/* 흙더미 이미지를 직접 클릭했을 때만 파진다 */
+document.getElementById('tr-layer').addEventListener('click', function(e){
+  var soil = e.target.closest('[data-pit]');
+  if (soil) digPit(+soil.dataset.pit);
 });
 
 /* 원본 버튼_자동점수반영: 결과 화면을 나갈 때 획득 점수를 반영.
