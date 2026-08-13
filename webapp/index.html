@@ -588,7 +588,7 @@ button { background-color:transparent; }
     <!-- ===================== 화면 6: 보물찾기 결과 ===================== -->
     <section class="scr" id="screen-treasure">
       <div id="tr-layer"></div>
-      <div class="at tb tr-hint" id="tr-hint">흙더미를 하나씩 클릭해 땅을 파 보세요!</div>
+      <div class="at tb tr-hint" id="tr-hint">흙더미 하나를 골라 클릭해 땅을 파 보세요!</div>
       <img class="at corner-d" src="assets/animal_c.png" alt="">
       <img class="at corner-e" src="assets/bear.png" alt="">
       <img class="at corner-f" src="assets/animal_d.png" alt="">
@@ -1291,30 +1291,41 @@ function showTreasure(){
   document.getElementById('b-tr-chest').style.display = 'none';
   document.getElementById('tr-hint').style.display = '';
   treasureRevealed = false;
+  dugFind = null;
   showScreen('screen-treasure');
 }
 
 var treasureRevealed = false;
+var dugFind = null;          /* 이번 문제에서 파낸 한 자리의 내용 */
 
-/* 흙더미를 하나 클릭하면 그 자리의 것만 올라온다 */
+/* 보석 값 — 뼈다귀 0, 빨간 보석 1, 초록 보석 3, 보물상자는 아이템 */
+var GEM_VALUE = { R:1, r:1, B:0, G:3, C:0 };
+
+/* 한 문제를 풀면 흙더미 하나만 파낸다.
+   파낸 자리의 내용이 곧 이번 차례의 보상이다. */
 function digPit(index){
+  if (treasureRevealed) return;                /* 이미 한 번 팠으면 끝 */
   var gem = document.querySelector('#tr-layer [data-gem="' + index + '"]');
   var soil = document.querySelector('#tr-layer [data-pit="' + index + '"]');
   if (!gem || gem.classList.contains('up')) return;
+
+  treasureRevealed = true;
   gem.classList.add('up');
   if (soil) soil.classList.add('done');
 
-  var gems = document.querySelectorAll('#tr-layer .tr-gem');
-  var done = document.querySelectorAll('#tr-layer .tr-gem.up').length;
-  document.getElementById('tr-hint').style.display = done ? 'none' : '';
+  /* 나머지 자리는 잠그고, 무엇이 있었는지는 보여주지 않는다 */
+  document.querySelectorAll('#tr-layer [data-pit]').forEach(function(el){
+    el.classList.add('done');
+  });
 
-  if (done === gems.length){                   /* 다 파내면 버튼을 연다 */
-    treasureRevealed = true;
-    setTimeout(function(){
-      document.getElementById('b-tr-pick').style.display  = currentTreasure.chest ? 'none' : '';
-      document.getElementById('b-tr-chest').style.display = currentTreasure.chest ? '' : 'none';
-    }, 450);
-  }
+  var code = currentTreasure.g.charAt(index);
+  dugFind = { code: code, points: GEM_VALUE[code] || 0, chest: code === 'C' };
+
+  document.getElementById('tr-hint').style.display = 'none';
+  setTimeout(function(){
+    document.getElementById('b-tr-pick').style.display  = dugFind.chest ? 'none' : '';
+    document.getElementById('b-tr-chest').style.display = dugFind.chest ? '' : 'none';
+  }, 450);
 }
 
 /* 흙더미 이미지를 직접 클릭했을 때만 파진다 */
@@ -1326,9 +1337,9 @@ document.getElementById('tr-layer').addEventListener('click', function(e){
 /* 원본 버튼_자동점수반영: 결과 화면을 나갈 때 획득 점수를 반영.
    더블포인트를 켜 두었다면 보석 수를 2배로 준다 (원본 slide8). */
 function applyTreasureScore(){
-  if (!currentTreasure) return;
+  if (!dugFind) return;
   var team = board.currentTeam;
-  var pts = currentTreasure.p;
+  var pts = dugFind.points;                    /* 파낸 한 자리의 값만 준다 */
   var doubled = false;
 
   if (board.pendingDouble === team && pts > 0){
@@ -1342,11 +1353,13 @@ function applyTreasureScore(){
     board.scores[team] = (board.scores[team] || 0) + pts;
     renderBoard();
     toast(team + '모둠 +' + pts + '점' + (doubled ? ' (더블포인트 2배!)' : ''));
+  } else if (dugFind.chest){
+    renderBoard();                             /* 보물상자는 아이템으로 이어진다 */
   } else {
     renderBoard();
-    toast('아쉽게도 획득한 점수가 없어요.');
+    toast('뼈다귀가 나왔어요. 획득한 점수가 없습니다.');
   }
-  currentTreasure.scored = true;
+  dugFind.scored = true;
 }
 
 function showChestPick(){
