@@ -434,6 +434,55 @@ button { background-color:transparent; }
   font-family:inherit; font-size:21px; cursor:pointer;
 }
 
+/* ============================================================
+   화면 9 — 게임 결과 (황금별 정산)
+   ============================================================ */
+.rs-card  { left:150px; top:104px; width:980px; height:472px; }
+.rs-head  { font-size:22px; color:#6b4a26; }
+.rs-h1 { left:200px; top:150px; width:90px;  height:30px; justify-content:center; }
+.rs-h2 { left:300px; top:150px; width:200px; height:30px; }
+.rs-h3 { left:520px; top:150px; width:120px; height:30px; justify-content:center; }
+.rs-h4 { left:660px; top:150px; width:180px; height:30px; justify-content:center; }
+.rs-h5 { left:870px; top:150px; width:180px; height:30px; justify-content:center; }
+
+.rs-row   { left:190px; width:900px; height:44px; border-radius:10px; }
+.rs-row.win { background:rgba(255,222,117,.55); }
+.rs-rank  { width:90px;  justify-content:center; font-size:26px; color:#442508; }
+.rs-name  { width:200px; font-size:26px; color:#2b1d0e; }
+.rs-base  { width:120px; justify-content:center; font-size:26px; color:#5b4630; }
+.rs-star  { width:180px; justify-content:center; font-size:22px; color:#8a6a2f; }
+.rs-final { width:180px; justify-content:center; font-size:32px; color:#B8471F; }
+.rs-cell  { position:absolute; display:flex; align-items:center; height:44px; }
+
+.rs-note  { left:150px; top:588px; width:980px; height:28px;
+            font-size:19px; color:#6b4a26; justify-content:center; }
+.b-again  { left:340px; top:624px; width:260px; height:66px;
+            background-image:url('assets/btn.png'); font-size:34px; }
+.b-credit { left:680px; top:624px; width:260px; height:66px;
+            background-image:url('assets/btn_gray.png'); font-size:34px; }
+
+/* ============================================================
+   크레딧 (원본 slide10 (크레딧그룹))
+   ============================================================ */
+.cr-ov { left:0; top:0; width:1280px; height:720px; z-index:70;
+         background:rgba(30,18,8,.92); display:none; }
+.cr-ov.on { display:block; }
+.cr-face  { left:595px; top:121px; width:89px;  height:90px; border-radius:50%; }
+.cr-by    { left:536px; top:228px; width:207px; height:23px; font-size:11px; color:#e8dccb;
+            justify-content:center; letter-spacing:2px; }
+.cr-song  { left:607px; top:241px; width:65px;  height:46px; }
+.cr-lucky { left:563px; top:287px; width:158px; height:36px; }
+.cr-t1    { left:536px; top:325px; width:207px; height:23px; font-size:11px; color:#e8dccb;
+            justify-content:center; letter-spacing:1px; }
+.cr-t2    { left:536px; top:339px; width:207px; height:26px; font-size:13px; color:#fff;
+            justify-content:center; letter-spacing:1px; }
+.cr-w1 { left:532px; top:412px; width:207px; height:23px; }
+.cr-w2 { left:532px; top:432px; width:207px; height:23px; }
+.cr-w3 { left:532px; top:453px; width:207px; height:23px; }
+.cr-web { font-size:11px; color:#cbb99f; justify-content:center; }
+.cr-start { left:519px; top:554px; width:243px; height:51px;
+            background-image:url('assets/btn.png'); font-size:27px; }
+
 /* 토스트 */
 .toast {
   position:absolute; left:50%; bottom:96px; transform:translate(-50%,10px);
@@ -632,6 +681,38 @@ button { background-color:transparent; }
       <div class="at tb pick-desc"  id="pick-desc"></div>
       <div class="at pick-teams" id="pick-teams"></div>
       <button class="at pick-cancel" id="pick-cancel">나중에</button>
+    </div>
+
+    <!-- ===================== 화면 9: 게임 결과 ===================== -->
+    <section class="scr" id="screen-result">
+      <img class="at sign" src="assets/sign.png" alt="">
+      <div class="at tb sign-tx">게임 결과</div>
+
+      <img class="at rs-card" src="assets/card.png" alt="">
+      <div class="at tb rs-head rs-h1">순위</div>
+      <div class="at tb rs-head rs-h2">모둠</div>
+      <div class="at tb rs-head rs-h3">보석</div>
+      <div class="at tb rs-head rs-h4">황금별 보너스</div>
+      <div class="at tb rs-head rs-h5">최종 점수</div>
+      <div id="rs-rows"></div>
+
+      <div class="at tb rs-note">황금별은 모은 개수만큼 점수로 바뀝니다 — 1개 5점 · 2개 12점 · 3개 20점 · 4개 30점</div>
+      <button class="at q-btn b-again"  id="b-again">다시 하기</button>
+      <button class="at q-btn b-credit" id="b-credit">크레딧</button>
+    </section>
+
+    <!-- 크레딧 -->
+    <div class="at cr-ov" id="cr-ov">
+      <img class="at cr-face"  src="assets/teacher.png" alt="">
+      <div class="at tb cr-by">PRODUCED BY</div>
+      <img class="at cr-song"  src="assets/logo_song_w.png" alt="">
+      <img class="at cr-lucky" src="assets/logo_lucky_w.png" alt="">
+      <div class="at tb cr-t1">YANGSONGI TEACHER’S</div>
+      <div class="at tb cr-t2">LUCKYTEM STUDIO</div>
+      <div class="at tb cr-web cr-w1">WWW.LUCKTEMSTUDIO.COM</div>
+      <div class="at tb cr-web cr-w2">WWW.양송이샘.COM</div>
+      <div class="at tb cr-web cr-w3">Instagram : @yangsongi_sam</div>
+      <button class="at q-btn cr-start" id="cr-start">START</button>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -1399,11 +1480,13 @@ function judge(correct){
   }
   toast('오답 — 점수 변동 없음');
   showScreen('screen-board');
+  checkGameEnd();
 }
 
 document.getElementById('b-tr-pick').onclick = function(){
   applyTreasureScore();
   showScreen('screen-board');
+  checkGameEnd();
 };
 document.getElementById('b-tr-chest').onclick = function(){
   applyTreasureScore();
@@ -1417,11 +1500,74 @@ document.getElementById('chest-layer').addEventListener('click', function(e){
    보관 아이템은 모둠판으로, 즉시 사용 아이템은 바로 발동. */
 document.getElementById('b-item-pick').onclick = function(){
   showScreen('screen-board');
-  if (!currentItem) return;
-  var item = currentItem, team = board.currentTeam;
-  currentItem = null;
-  if (item.kind === 'keep') grantItem(item, team);
-  else applyNowItem(item.effect, team);
+  if (currentItem){
+    var item = currentItem, team = board.currentTeam;
+    currentItem = null;
+    if (item.kind === 'keep') grantItem(item, team);
+    else applyNowItem(item.effect, team);
+  }
+  checkGameEnd();
+};
+
+/* ============================================================
+   게임 결과 — 황금별 정산 (원본 slide8: 1개 5 / 2개 12 / 3개 20 / 4개 30)
+   ============================================================ */
+
+/* 문제 카드를 모두 파내면 게임이 끝난다 */
+function checkGameEnd(){
+  var dug = 0;
+  CARDS.forEach(function(c){ if (board.dug[c.n]) dug++; });
+  if (dug >= CARDS.length) setTimeout(showResult, 700);
+}
+
+function showResult(){
+  var rows = [];
+  for (var t = 1; t <= board.teams; t++){
+    var inv = board.inv[t] || { star:0 };
+    var bonus = STAR_BONUS[Math.min(inv.star, 4)] || 0;
+    rows.push({ team:t, base:board.scores[t] || 0, star:inv.star || 0,
+                bonus:bonus, total:(board.scores[t] || 0) + bonus });
+  }
+  rows.sort(function(a, b){ return b.total - a.total; });
+
+  /* 동점이면 같은 순위 */
+  var rank = 0, prev = null;
+  rows.forEach(function(r, i){
+    if (prev === null || r.total !== prev) rank = i + 1;
+    r.rank = rank;
+    prev = r.total;
+  });
+
+  var top = rows[0] ? rows[0].total : 0;
+  var html = '';
+  rows.forEach(function(r, i){
+    var y = 194 + i * 46;
+    var win = r.total === top && top > 0;
+    html +=
+      '<div class="at rs-row' + (win ? ' win' : '') + '" style="top:' + (y - 2) + 'px"></div>' +
+      '<div class="rs-cell rs-rank"  style="left:200px;top:' + y + 'px">' +
+        (win ? '👑' : r.rank) + '</div>' +
+      '<div class="rs-cell rs-name"  style="left:300px;top:' + y + 'px">' + r.team + ' 모둠</div>' +
+      '<div class="rs-cell rs-base"  style="left:520px;top:' + y + 'px">' + r.base + '</div>' +
+      '<div class="rs-cell rs-star"  style="left:660px;top:' + y + 'px">' +
+        (r.star ? '⭐'.repeat(r.star) + ' +' + r.bonus : '-') + '</div>' +
+      '<div class="rs-cell rs-final" style="left:870px;top:' + y + 'px">' + r.total + '</div>';
+  });
+  document.getElementById('rs-rows').innerHTML = html;
+  showScreen('screen-result');
+
+  var winners = rows.filter(function(r){ return r.total === top && top > 0; });
+  if (winners.length === 1) toast('🏆 ' + winners[0].team + '모둠 우승!');
+  else if (winners.length > 1) toast('🏆 공동 우승: ' + winners.map(function(r){ return r.team + '모둠'; }).join(', '));
+}
+
+document.getElementById('b-again').onclick = function(){ startBoard(); };
+document.getElementById('b-credit').onclick = function(){
+  document.getElementById('cr-ov').classList.add('on');
+};
+document.getElementById('cr-start').onclick = function(){
+  document.getElementById('cr-ov').classList.remove('on');
+  showScreen('screen-title');
 };
 
 document.getElementById('b-check').onclick = function(){ showScreen('screen-answer'); };
