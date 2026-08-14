@@ -32,7 +32,7 @@ BANK_START = 70
 SLIDES_PER_Q = 3
 
 # 빈칸 자리 표시. 원본은 흰 네모칸에 분홍 '?' 도형을 덮어 가리므로,
-# 웹에서도 같은 상자로 그릴 수 있게 가려진 글자 수를 함께 남긴다.
+# 웹에서도 같은 상자로 그릴 수 있게 원본 상자의 실제 폭(px)을 함께 남긴다.
 BLANK_TOKEN = '[[?%d]]'
 
 
@@ -100,16 +100,28 @@ def choice_list(q_shapes):
     return [out.get(str(i), '') for i in (1, 2, 3, 4)]
 
 
-def mask_answer(question, answer):
+def blank_widths(q_shapes):
+    """문제 슬라이드의 '?' 도형 폭을 읽는 순서(위→아래, 왼→오른쪽)대로 돌려준다."""
+    boxes = [s for s in visible(q_shapes) if s['text'].strip() == '?']
+    boxes.sort(key=lambda s: (s['y'], s['x']))
+    return [s['w'] for s in boxes]
+
+
+def mask_answer(question, answer, widths):
     """빈칸 문항에서 문장에 노출된 정답을 '?' 상자 자리표시로 바꾼다.
 
     원본은 '( 온도 )' 처럼 괄호까지 상자가 덮으므로, 괄호가 있으면 괄호째
     가린다. ( ㉠ ) 같은 기호 빈칸도 같은 방식으로 가린다.
+    상자 폭은 원본 도형의 폭을 그대로 쓴다 (없으면 글자 수로 어림).
     """
     masked = question
+    used = [0]
 
     def box(text):
-        return BLANK_TOKEN % max(1, len(text))
+        i = used[0]
+        used[0] += 1
+        w = widths[i] if i < len(widths) else max(73, 40 + len(text) * 23)
+        return BLANK_TOKEN % w
 
     for p in [p.strip() for p in re.split(r'[,·]', answer) if p.strip()]:
         if not p or p not in masked:
@@ -170,7 +182,8 @@ def main():
             big = by_size(as_)
             item['answer'] = big[0]['text'].strip() if big else ''
             if kind == 'blank':
-                item['question'] = mask_answer(item['question'], item['answer'])
+                item['question'] = mask_answer(item['question'], item['answer'],
+                                               blank_widths(qs))
 
         img = first_image(qs)
         if img:
