@@ -276,6 +276,21 @@ button { background-color:transparent; }
              background:rgba(0,0,0,.6); display:none; }
 .dice-ov.on { display:block; }
 .dice-img  { left:393px; top:206px; width:222px; height:222px; }
+/* 굴리는 동안 구르는 느낌, 멈출 때 툭 떨어지는 느낌 */
+.dice-img.rolling { animation:diceTumble .42s linear infinite; }
+@keyframes diceTumble {
+  0%   { transform:rotate(0deg)   scale(1)    translateY(0); }
+  25%  { transform:rotate(90deg)  scale(1.07) translateY(-14px); }
+  50%  { transform:rotate(180deg) scale(1)    translateY(0); }
+  75%  { transform:rotate(270deg) scale(1.07) translateY(-14px); }
+  100% { transform:rotate(360deg) scale(1)    translateY(0); }
+}
+.dice-img.landed { animation:diceLand .4s cubic-bezier(.2,1.7,.4,1); }
+@keyframes diceLand {
+  0%   { transform:scale(1.28) rotate(-9deg); }
+  55%  { transform:scale(.93)  rotate(4deg); }
+  100% { transform:scale(1)    rotate(0deg); }
+}
 .dice-close {
   left:362px; top:477px; width:282px; height:59px; border:none; cursor:pointer;
   background:url('assets/btn_close.png') no-repeat center/100% 100%;
@@ -1201,12 +1216,45 @@ var ITEMS = [
 /* 황금별 정산표 — 원본 slide8 (1개 5, 2개 12, 3개 20, 4개 30) */
 var STAR_BONUS = [0, 5, 12, 20, 30];
 
-/* 주사위를 굴려 오버레이로 보여준다 (원본 버튼_주사위랜덤던지기와 같은 연출) */
-function rollDice(){
-  var n = Math.floor(Math.random() * 6) + 1;
-  document.getElementById('dice-img').src = 'assets/dice' + n + '.png';
+/* 주사위를 굴린다 (원본 버튼_주사위랜덤던지기).
+   눈이 점점 느리게 바뀌다가 멈추고, 멈춘 뒤에 done(n) 으로 결과를 넘긴다.
+   스틸·폭탄처럼 결과가 필요한 곳은 done 에서 처리해야 굴러가는 동안
+   점수가 먼저 바뀌지 않는다. */
+var diceRolling = false;
+
+function rollDice(done){
+  if (diceRolling) return;
+  diceRolling = true;
+
+  var img = document.getElementById('dice-img');
+  var close = document.getElementById('dice-close');
+  var result = Math.floor(Math.random() * 6) + 1;
+
   document.getElementById('dice-ov').classList.add('on');
-  return n;
+  close.style.visibility = 'hidden';          /* 구르는 중에는 닫기를 숨긴다 */
+  img.classList.remove('landed');
+  img.classList.add('rolling');
+
+  /* 간격을 조금씩 늘려 감속시킨다 */
+  var elapsed = 0, gap = 50;
+  for (var i = 0; i < 12; i++){
+    elapsed += gap;
+    gap = Math.round(gap * 1.14);
+    (function(step, at){
+      setTimeout(function(){
+        var face = (step === 11) ? result : Math.floor(Math.random() * 6) + 1;
+        img.src = 'assets/dice' + face + '.png';
+      }, at);
+    })(i, elapsed);
+  }
+
+  setTimeout(function(){
+    img.classList.remove('rolling');
+    img.classList.add('landed');
+    close.style.visibility = '';
+    diceRolling = false;
+    if (done) done(result);
+  }, elapsed + 40);
 }
 
 /* ===== 대상 모둠 선택 오버레이 ===== */
@@ -1274,25 +1322,27 @@ function applyNowItem(effect, team){
     pickTeam('보석 스틸', '주사위를 굴려 나온 수만큼 지목한 팀의 점수를 가져옵니다.', team)
       .then(function(target){
         if (!target) { toast('대상 팀을 고르지 않아 넘어갑니다.'); return; }
-        var n = rollDice();
-        var got = Math.min(n, Math.max(0, board.scores[target]));
-        board.scores[target] -= got;
-        board.scores[team] = (board.scores[team] || 0) + got;
-        renderBoard();
-        toast('주사위 ' + n + ' → ' + target + '모둠에서 ' + got + '점을 가져왔어요.');
+        rollDice(function(n){
+          var got = Math.min(n, Math.max(0, board.scores[target]));
+          board.scores[target] -= got;
+          board.scores[team] = (board.scores[team] || 0) + got;
+          renderBoard();
+          toast('주사위 ' + n + ' → ' + target + '모둠에서 ' + got + '점을 가져왔어요.');
+        });
       });
     return;
   }
   if (effect === 'bomb'){
-    var n = rollDice();
-    if (n % 2 === 1){
-      for (var t = 1; t <= board.teams; t++) board.scores[t] = 0;
-      toast('주사위 ' + n + ' (홀수) — 모든 모둠의 점수가 0이 되었어요!');
-    } else {
-      board.scores[team] = 0;
-      toast('주사위 ' + n + ' (짝수) — ' + team + '모둠만 0점이 되었어요.');
-    }
-    renderBoard();
+    rollDice(function(n){
+      if (n % 2 === 1){
+        for (var t = 1; t <= board.teams; t++) board.scores[t] = 0;
+        toast('주사위 ' + n + ' (홀수) — 모든 모둠의 점수가 0이 되었어요!');
+      } else {
+        board.scores[team] = 0;
+        toast('주사위 ' + n + ' (짝수) — ' + team + '모둠만 0점이 되었어요.');
+      }
+      renderBoard();
+    });
   }
 }
 
@@ -1623,12 +1673,9 @@ document.getElementById('bt-remake').onclick = function(){
 };
 
 /* 주사위 던지기 — 원본 버튼_주사위랜덤던지기 */
-document.getElementById('bt-dice').onclick = function(){
-  var n = Math.floor(Math.random() * 6) + 1;
-  document.getElementById('dice-img').src = 'assets/dice' + n + '.png';
-  document.getElementById('dice-ov').classList.add('on');
-};
+document.getElementById('bt-dice').onclick = function(){ rollDice(); };
 document.getElementById('dice-close').onclick = function(){
+  if (diceRolling) return;                    /* 구르는 중에는 닫지 않는다 */
   document.getElementById('dice-ov').classList.remove('on');
 };
 
