@@ -343,6 +343,15 @@ button { background-color:transparent; }
 .a-ox-o { left:557px; top:193px; }
 .a-ox-x { left:559px; top:199px; }
 
+/* 빈칸 — 원본의 흰 네모칸 + 분홍 '?' 도형 (bg1 / tx1 3pt / #EB3D7B 40pt) */
+.q-blank {
+  display:inline-flex; align-items:center; justify-content:center;
+  height:73px; vertical-align:middle; margin:0 5px;
+  background:#fff; border:4px solid #111; border-radius:16px;
+  color:#EB3D7B; font-size:53px; line-height:1;
+  padding-bottom:8px; box-sizing:border-box;
+}
+
 /* 4지선다 보기 */
 /* 원본 배지는 tx1(검정) 배경 + bg1(흰) 글자 */
 .ch-badge {
@@ -1087,6 +1096,24 @@ function questionOf(cardNo){
 
 var currentCard = null;
 
+/* 빈칸 자리표시 [[?n]] 를 '?' 네모칸으로 바꿔 그린다.
+   문제 텍스트는 사용자 데이터이므로 상자 외의 글자는 그대로 텍스트로 넣는다. */
+function renderQuestionText(el, text){
+  el.textContent = '';
+  var re = /\[\[\?(\d+)\]\]/g, last = 0, m;
+  while ((m = re.exec(text)) !== null){
+    if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+    var span = document.createElement('span');
+    span.className = 'q-blank';
+    span.textContent = '?';
+    /* 가려진 글자 수에 맞춰 폭을 잡는다 (원본 상자 크기와 비슷하게) */
+    span.style.minWidth = Math.max(73, 40 + (+m[1]) * 23) + 'px';
+    el.appendChild(span);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+}
+
 /* 4지선다 보기 자리 (원본 slide107 기준 2x2 배치) */
 var CHOICE_SLOTS = [[279, 292], [279, 371], [716, 292], [716, 371]];
 
@@ -1115,7 +1142,7 @@ function openQuestion(cardNo){
 
   var txt = document.getElementById('q-text');
   var img = document.getElementById('q-img');
-  txt.textContent = q.question;
+  renderQuestionText(txt, q.question);
 
   if (q.image){
     img.src = q.image; img.style.display = '';

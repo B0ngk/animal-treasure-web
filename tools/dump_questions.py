@@ -30,7 +30,10 @@ IMG_DIR = ROOT / 'webapp' / 'assets' / 'q'
 
 BANK_START = 70
 SLIDES_PER_Q = 3
-BLANK_MARK = '◯'          # 가려진 정답 자리에 넣을 표시
+
+# 빈칸 자리 표시. 원본은 흰 네모칸에 분홍 '?' 도형을 덮어 가리므로,
+# 웹에서도 같은 상자로 그릴 수 있게 가려진 글자 수를 함께 남긴다.
+BLANK_TOKEN = '[[?%d]]'
 
 
 def visible(shapes):
@@ -98,12 +101,30 @@ def choice_list(q_shapes):
 
 
 def mask_answer(question, answer):
-    """빈칸 문항에서 문장에 노출된 정답을 가린다."""
-    parts = [p.strip() for p in re.split(r'[,·]', answer) if p.strip()]
+    """빈칸 문항에서 문장에 노출된 정답을 '?' 상자 자리표시로 바꾼다.
+
+    원본은 '( 온도 )' 처럼 괄호까지 상자가 덮으므로, 괄호가 있으면 괄호째
+    가린다. ( ㉠ ) 같은 기호 빈칸도 같은 방식으로 가린다.
+    """
     masked = question
-    for p in parts:
-        if p and p in masked:
-            masked = masked.replace(p, BLANK_MARK, 1)
+
+    def box(text):
+        return BLANK_TOKEN % max(1, len(text))
+
+    for p in [p.strip() for p in re.split(r'[,·]', answer) if p.strip()]:
+        if not p or p not in masked:
+            continue
+        # 괄호로 감싸여 있으면 괄호까지 함께 가린다
+        m = re.search(r'\(\s*' + re.escape(p) + r'\s*\)', masked)
+        if m:
+            masked = masked.replace(m.group(0), box(m.group(0)), 1)
+        else:
+            masked = masked.replace(p, box(p), 1)
+
+    # ( ㉠ ) ( ㉡ ) 처럼 기호로 표시된 빈칸도 상자로 가린다
+    for m in re.findall(r'\(\s*[㉠-㉭]\s*\)', masked):
+        masked = masked.replace(m, box(m), 1)
+
     return masked
 
 
@@ -181,7 +202,13 @@ def main():
     if bad:
         print(f'  ⚠️ 정답/문제가 비어 있는 문항: {bad}')
     spoiled = [q['id'] for q in questions
-               if q['type'] == 'blank' and q['answer'] in q['question']]
+               if q['type'] == 'blank'
+               and any(p.strip() and p.strip() in q['question']
+                       for p in re.split(r'[,·]', q['answer']))]
+    noblank = [q['id'] for q in questions
+               if q['type'] == 'blank' and '[[?' not in q['question']]
+    if noblank:
+        print(f'  ⚠️ 빈칸 표시가 없는 문항: {noblank}')
     if spoiled:
         print(f'  ⚠️ 정답이 문제에 노출된 문항: {spoiled}')
 
